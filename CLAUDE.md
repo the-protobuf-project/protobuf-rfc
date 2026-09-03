@@ -39,6 +39,12 @@ The split order for an RFC directory:
 A package with no service omits `service.proto`. A resource with no embedded
 value objects omits `types.proto`.
 
+A package needing more than one service — one proto `service` block cannot
+span files, so a 200-line-per-service split forces separate services, e.g.
+`rfc5546/scheduling/v1`'s organiser/attendee send-permission split — names
+each pair `<role>_service.proto` and `<role>_messages.proto`, not
+`service_<role>.proto` or `messages_<role>.proto`.
+
 ## 3. AIP is the convention
 
 api-linter must report zero violations. In practice that means:

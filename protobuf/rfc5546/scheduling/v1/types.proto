@@ -1,0 +1,101 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5546.scheduling.v1;
+
+import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
+import "google/type/date.proto";
+import "google/type/datetime.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "TypesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5546.scheduling.v1";
+
+// CalendarTime is an iCalendar DATE or DATE-TIME value, RFC 5545
+// sections 3.3.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.4> and 3.3.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5>.
+//
+// A copy of the message in protobuf.rfc5545.event.v1, not a reference to it:
+// AIP-215 <https://aip.dev/215> permits no cross-package message reference. This is the third
+// package to carry it, after event and todo/journal, and it is the strongest
+// evidence yet for the alternative recorded in plan/01-icalendar.md -- a
+// single rfc5545 package would remove the copies at the cost of
+// per-resource versioning.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.3.5.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5
+message CalendarTime {
+  // Exactly one form. Neither set is not a valid iCalendar time.
+  oneof value {
+    // DATE: an all-day value, no time and no zone.
+    google.type.Date date = 1;
+
+    // DATE-TIME: floating when time_offset is unset, absolute when
+    // utc_offset is set, zone-referenced when time_zone is.
+    google.type.DateTime date_time = 2;
+  }
+}
+
+// Delivery is the outcome of sending one scheduling message to one recipient.
+message Delivery {
+  // The calendar user the message was addressed to, e.g.
+  // "mailto:bob@example.com".
+  string address = 1;
+
+  // Whether it was delivered, and why not if it was not.
+  //
+  // A google.rpc.Status per recipient rather than one status for the call:
+  // a scheduling message fans out, and one bad address must not fail the
+  // other nine invitations.
+  google.rpc.Status status = 2;
+}
+
+// Progress of a running scheduling operation, RFC 5546 section 3.2 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2>.
+//
+// Shared by every method, organiser and attendee alike: metadata_type does
+// not carry the response-message-name / http-uri-suffix constraints AIP-136
+// <https://aip.dev/136> puts on response_type, so one message serves all eight.
+message ScheduleMetadata {
+  // When the send started.
+  google.protobuf.Timestamp create_time = 1;
+
+  // When it finished, unset while running.
+  google.protobuf.Timestamp end_time = 2;
+
+  // Recipients contacted so far.
+  int32 recipients_contacted = 3;
+
+  // Recipients the message is addressed to in total.
+  int32 recipients_total = 4;
+}
+
+// Participation is the PARTSTAT parameter, RFC 5545 section 3.2.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.12>, as an
+// attendee sets it when replying.
+//
+// A copy of the enum in protobuf.rfc5545.event.v1 for the same AIP-215 <https://aip.dev/215>
+// reason as CalendarTime above. Kept byte-identical deliberately.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.2.12.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.12
+enum Participation {
+  // Not specified. Invalid in a reply: section 3.2.3 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.3> exists to carry a
+  // decision, and "no decision" is not one.
+  PARTICIPATION_UNSPECIFIED = 0;
+
+  // NEEDS-ACTION. No reply yet.
+  PARTICIPATION_NEEDS_ACTION = 1;
+
+  // ACCEPTED.
+  PARTICIPATION_ACCEPTED = 2;
+
+  // DECLINED.
+  PARTICIPATION_DECLINED = 3;
+
+  // TENTATIVE.
+  PARTICIPATION_TENTATIVE = 4;
+
+  // DELEGATED. Passed to someone else, who is named in the reply.
+  PARTICIPATION_DELEGATED = 5;
+}

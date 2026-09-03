@@ -1,0 +1,121 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5546.scheduling.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "protobuf/rfc5546/scheduling/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "AttendeeMessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5546.scheduling.v1";
+
+// Request message for Scheduling.ReplyEvent, RFC 5546 section 3.2.3 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.3>.
+//
+// This file holds the attendee-sent methods -- REPLY, REFRESH, COUNTER --
+// see organiser_messages.proto for the other four, and for why every event
+// is named by resource, not embedded.
+message ReplyEventRequest {
+  // The event being replied to.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // The replying attendee's calendar address. Required: a reply that does not
+  // say who it is from cannot be applied to an attendee list.
+  string attendee = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The decision.
+  Participation participation = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // Who the invitation was passed to. Meaningful only when participation is
+  // PARTICIPATION_DELEGATED, section 3.2.3 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.3>.
+  repeated string delegatees = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Free text for the organiser, carried as COMMENT.
+  string comment = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Scheduling.ReplyEvent, matching the RPC name per
+// AIP-136 <https://aip.dev/136>. A reply updates PARTSTAT, which is not a
+// SEQUENCE-incrementing property, so there is no SEQUENCE to report.
+message ReplyEventResponse {
+  // One entry per recipient the message was sent to -- the organiser.
+  repeated Delivery deliveries = 1;
+}
+
+// Request message for Scheduling.RefreshEvent, RFC 5546 section 3.2.6 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.6>.
+message RefreshEventRequest {
+  // The event whose current description is wanted.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // The attendee asking. Section 3.2.6 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.6> is an attendee-to-organiser method.
+  string attendee = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+}
+
+// Response message for Scheduling.RefreshEvent, matching the RPC name per
+// AIP-136 <https://aip.dev/136>. A refresh request does not itself change
+// the event, so there is no SEQUENCE to report.
+message RefreshEventResponse {
+  // One entry per recipient the message was sent to -- the organiser.
+  repeated Delivery deliveries = 1;
+}
+
+// Request message for Scheduling.CounterEvent, RFC 5546 section 3.2.7 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.7>.
+message CounterEventRequest {
+  // The event being countered.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // The attendee proposing the change.
+  string attendee = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The proposed start, if the counter moves the event.
+  CalendarTime proposed_start = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // The proposed end.
+  CalendarTime proposed_end = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // The proposed location.
+  string proposed_location = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Why, carried as COMMENT.
+  string comment = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Scheduling.CounterEvent, matching the RPC name per
+// AIP-136 <https://aip.dev/136>. A counter-proposal does not change the
+// event until the organiser accepts it with a fresh RequestEvent, so there
+// is no SEQUENCE to report.
+message CounterEventResponse {
+  // One entry per recipient the message was sent to -- the organiser.
+  repeated Delivery deliveries = 1;
+}

@@ -1,0 +1,151 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5546.scheduling.v1;
+
+import "google/api/annotations.proto";
+import "google/longrunning/operations.proto";
+import "protobuf/rfc5546/scheduling/v1/organiser_messages.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OrganiserServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5546.scheduling.v1";
+
+// OrganiserScheduling is the organiser-sent half of iTIP, RFC 5546: the
+// protocol for agreeing a calendar entry between an organiser and its
+// attendees. See attendee_service.proto for the attendee-sent half.
+//
+// **METHOD is the RPC, not a field.** RFC 5546 works by putting a METHOD
+// property on an iCalendar object, which turns that object into a message
+// envelope. Modelling it that way here would have given Event a `method`
+// field and stopped it being a calendar entry -- an event would then mean
+// something different depending on how it arrived. Each METHOD is an
+// operation instead, which is also what makes the organiser/attendee split
+// expressible as two services rather than one with mixed permissions.
+//
+// **Who may send what**, section 3.2 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2>: an organiser sends PUBLISH, REQUEST,
+// ADD, CANCEL and DECLINECOUNTER -- this service. An attendee sends REPLY,
+// REFRESH and COUNTER -- AttendeeScheduling. That split is a property of the
+// protocol, not of this API, and a server must enforce it: an attendee who
+// can cancel other people's meetings is a scheduling system with no
+// organiser.
+//
+// **Every method is long-running.** A scheduling message fans out to every
+// attendee over transports this API does not own, so delivery cannot be
+// reported synchronously. Each operation resolves to a response carrying one
+// google.rpc.Status per recipient: one bad address must not fail the other
+// nine invitations. Only the methods that can change a scheduling-significant
+// property also report SEQUENCE -- see organiser_messages.proto for which.
+service OrganiserScheduling {
+  // Posts an event to recipients who are not expected to reply,
+  // section 3.2.1 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.1>.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:publish
+  //
+  // Recipients are not attendees and are not added to the event. Publishing
+  // is how a calendar is announced, not how a meeting is arranged.
+  //
+  //   NOT_FOUND          no such event
+  //   PERMISSION_DENIED  caller is not the organiser
+  rpc PublishEvent(PublishEventRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:publish"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "PublishEventResponse"
+      metadata_type: "ScheduleMetadata"
+    };
+  }
+
+  // Invites attendees, or sends them an update, section 3.2.2 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.2>.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:request
+  //
+  // The same method invites and reschedules: section 2.1.4 <https://www.rfc-editor.org/rfc/rfc5546.html#section-2.1.4> says a change to
+  // DTSTART, DTEND, DURATION, RRULE, RDATE, EXDATE or STATUS must increment
+  // SEQUENCE, and it is that number, not a different method, that tells an
+  // attendee an invitation supersedes one they already hold.
+  //
+  //   NOT_FOUND            no such event
+  //   FAILED_PRECONDITION  the event has no organiser, or no attendees
+  //   PERMISSION_DENIED    caller is not the organiser
+  rpc RequestEvent(RequestEventRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:request"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "RequestEventResponse"
+      metadata_type: "ScheduleMetadata"
+    };
+  }
+
+  // Adds instances to a recurring event without resending it whole,
+  // section 3.2.4 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.4>.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:add
+  //
+  // Each new instance is treated as if it had been referenced by an RDATE on
+  // the recurring event. An attendee that cannot process ADD falls back to
+  // RefreshEvent for the whole description.
+  //
+  //   NOT_FOUND            no such event
+  //   FAILED_PRECONDITION  the event does not recur
+  //   PERMISSION_DENIED    caller is not the organiser
+  rpc AddEvent(AddEventRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:add"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "AddEventResponse"
+      metadata_type: "ScheduleMetadata"
+    };
+  }
+
+  // Cancels an event, or named instances of a recurring one, section 3.2.5 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.5>.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:cancel
+  //
+  // Sets STATUS to CANCELLED and notifies every attendee. Distinct from
+  // Events.DeleteEvent, which removes the organiser's copy and tells nobody:
+  // deleting a meeting without cancelling it leaves it on every other
+  // calendar.
+  //
+  //   NOT_FOUND          no such event
+  //   PERMISSION_DENIED  caller is not the organiser
+  rpc CancelEvent(CancelEventRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:cancel"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "CancelEventResponse"
+      metadata_type: "ScheduleMetadata"
+    };
+  }
+
+  // Rejects a counter-proposal, section 3.2.8 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.8>.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:decline
+  //
+  // Closes the exchange the attendee opened with AttendeeScheduling.CounterEvent.
+  // Without it a proposal has no terminal state and the attendee waits
+  // indefinitely.
+  //
+  //   NOT_FOUND          no such event
+  //   PERMISSION_DENIED  caller is not the organiser
+  rpc DeclineCounterEvent(DeclineCounterEventRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:decline"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "DeclineCounterEventResponse"
+      metadata_type: "ScheduleMetadata"
+    };
+  }
+}

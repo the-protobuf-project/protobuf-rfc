@@ -7,7 +7,7 @@ version: v2
 # protobuf/ is itself the first package segment: protobuf/rfc6350/user/v1
 # resolves to package protobuf.rfc6350.user.v1 and PACKAGE_DIRECTORY_MATCH
 # holds without a redundant directory inside it.
-name: buf.build/the-protobuf-project/protobuf-rfc
+name: buf.build/the-protobuf-project/rfc
 deps:
   - buf.build/bufbuild/protovalidate
   - buf.build/googleapis/googleapis

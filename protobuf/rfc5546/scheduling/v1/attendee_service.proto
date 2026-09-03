@@ -1,0 +1,85 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5546.scheduling.v1;
+
+import "google/api/annotations.proto";
+import "google/longrunning/operations.proto";
+import "protobuf/rfc5546/scheduling/v1/attendee_messages.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "AttendeeServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5546.scheduling.v1";
+
+// AttendeeScheduling is the attendee-sent half of iTIP, RFC 5546: REPLY,
+// REFRESH and COUNTER. See organiser_service.proto for the organiser-sent
+// half, and for why METHOD is modelled as the RPC and every method is
+// long-running.
+service AttendeeScheduling {
+  // Records an attendee's decision and tells the organiser, section 3.2.3 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.3>.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:reply
+  //
+  // This both updates the attendee's PARTSTAT on the stored event and sends
+  // the REPLY. The two must not drift: an accepted invitation that the
+  // organiser's calendar still shows as NEEDS-ACTION is the single most
+  // common scheduling complaint.
+  //
+  //   NOT_FOUND          no such event, or the caller is not on its attendee list
+  //   INVALID_ARGUMENT   participation is unspecified
+  //   PERMISSION_DENIED  caller is not the attendee named
+  rpc ReplyEvent(ReplyEventRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:reply"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "ReplyEventResponse"
+      metadata_type: "ScheduleMetadata"
+    };
+  }
+
+  // Asks the organiser for the event's current description, section 3.2.6 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.6>.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:refresh
+  //
+  // An attendee-to-organiser method: it requests a REQUEST, it does not read
+  // the event. A caller who can already read the event should call
+  // Events.GetEvent instead.
+  //
+  //   NOT_FOUND          no such event
+  //   PERMISSION_DENIED  caller is not an attendee
+  rpc RefreshEvent(RefreshEventRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:refresh"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "RefreshEventResponse"
+      metadata_type: "ScheduleMetadata"
+    };
+  }
+
+  // Proposes a change to the organiser, section 3.2.7 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.7>.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:counter
+  //
+  // A proposal, not a mutation: the event is unchanged until the organiser
+  // accepts by sending a fresh OrganiserScheduling.RequestEvent. Nothing here
+  // writes to the event.
+  //
+  //   NOT_FOUND          no such event
+  //   PERMISSION_DENIED  caller is not an attendee
+  rpc CounterEvent(CounterEventRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:counter"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "CounterEventResponse"
+      metadata_type: "ScheduleMetadata"
+    };
+  }
+}

@@ -14,7 +14,7 @@ Add the dependency to your `buf.yaml`:
 ```yaml
 version: v2
 deps:
-  - buf.build/the-protobuf-project/protobuf-rfc
+  - buf.build/the-protobuf-project/rfc
 ```
 
 Then `buf dep update`, and import what you need:
@@ -144,4 +144,39 @@ travels with the Go SDK.
 The schemas model structures specified by IETF RFCs. Those documents are the
 IETF's and are covered by BCP 78; `NOTICE` records the distinction between
 them and the original work here.
+
+## Conformance
+
+`codec/go` implements all five wire formats the schemas claim to model —
+`text/vcard` (RFC 6350), `application/vcard+xml` (RFC 6351),
+`application/vcard+json` (RFC 7095), `text/calendar` (RFC 5545) and
+`application/calendar+json` (RFC 7265) — and is the repository's conformance
+test. The content-line syntax the two families share lives in
+`internal/contentline`. It is deliberately **not** a published library — it exists to answer the
+one question `buf lint` and `api-linter` cannot: does a real `.vcf` survive
+import and export unchanged?
+
+```sh
+buf generate && cp sandbox/go/go.mod gen/go/go.mod
+(cd gen/go && go mod tidy)
+(cd codec/go && go test ./...)
+```
+
+CI runs it in the `Conformance` job. Three kinds of test, and all three are
+needed:
+
+- `roundtrip_test.go` — decode → encode → decode is stable.
+- `decode_test.go` — specific properties decode to specific values.
+  Round-trip equality alone is blind to *symmetric* loss: a property dropped
+  on both sides still compares equal.
+- `jcard_test.go` — text/vcard and jCard produce the same `Contact`. Two
+  encodings of one data model cannot legitimately disagree, and this found a
+  URI-escaping bug that neither single-format test could see.
+- `ical/*_test.go` — the calendar equivalents, including `TestTimeForms`,
+  which asserts that floating, UTC, zoned and all-day values stay distinct.
+  That test is the reason `CalendarTime` exists instead of a `Timestamp`.
+
+Each family has a text encoding and a JSON encoding, and the cross-format
+tests require both to produce the same message. Two encodings of one data
+model cannot legitimately disagree.
 

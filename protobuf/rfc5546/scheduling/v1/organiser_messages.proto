@@ -1,0 +1,164 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5546.scheduling.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "protobuf/rfc5546/scheduling/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OrganiserMessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5546.scheduling.v1";
+
+// Request message for Scheduling.PublishEvent, RFC 5546 section 3.2.1 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.1>.
+//
+// This file and attendee_messages.proto together hold every scheduling
+// request and response: this one for the organiser-sent methods -- PUBLISH,
+// REQUEST, CANCEL, DECLINECOUNTER -- the other for REPLY, REFRESH, COUNTER.
+//
+// Every scheduling method names the event it concerns by resource name, not
+// by the Event message itself: the event lives in another proto package and
+// AIP-215 <https://aip.dev/215> permits no cross-package message reference. It is also the
+// better contract -- the stored event is the source of truth, so a caller
+// cannot send an invitation describing something the calendar does not hold.
+message PublishEventRequest {
+  // The event to publish.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // Where to post it. Publication expects no reply, so these are not
+  // attendees and are not added to the event.
+  repeated string recipients = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Scheduling.PublishEvent, matching the RPC name per
+// AIP-136 <https://aip.dev/136>. Publishing does not itself change a
+// scheduling-significant property, so there is no SEQUENCE to report.
+message PublishEventResponse {
+  // One entry per recipient the message was sent to.
+  repeated Delivery deliveries = 1;
+}
+
+// Request message for Scheduling.RequestEvent, RFC 5546 section 3.2.2 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.2>.
+message RequestEventRequest {
+  // The event to invite to.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // Limit the invitation to these addresses. Empty invites every attendee on
+  // the event, which is the normal case; naming a subset is how a
+  // re-invitation reaches only the people who have not replied.
+  repeated string attendees = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Scheduling.RequestEvent, matching the RPC name per
+// AIP-136 <https://aip.dev/136>.
+message RequestEventResponse {
+  // One entry per recipient the message was sent to.
+  repeated Delivery deliveries = 1;
+
+  // The event's SEQUENCE after the method ran, RFC 5545 section 3.8.7.4.
+  //
+  // A change to DTSTART, DTEND, DURATION, RRULE, RDATE, EXDATE or STATUS
+  // must increment it, per RFC 5546 section 2.1.4 <https://www.rfc-editor.org/rfc/rfc5546.html#section-2.1.4>, and returning it lets a
+  // caller tell an update apart from a retry.
+  int32 sequence = 2;
+}
+
+// Request message for Scheduling.AddEvent, RFC 5546 section 3.2.4 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.4>.
+message AddEventRequest {
+  // The recurring event to add instances to.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // The new instances. Each is treated as if it had been referenced by an
+  // RDATE on the recurring event, section 3.2.4 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.4>.
+  repeated CalendarTime instances = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+
+  // Why, carried as COMMENT.
+  string comment = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Scheduling.AddEvent, matching the RPC name per
+// AIP-136 <https://aip.dev/136>. Adding instances is an RDATE change, one of
+// the SEQUENCE-incrementing properties, section 2.1.4 <https://www.rfc-editor.org/rfc/rfc5546.html#section-2.1.4>.
+message AddEventResponse {
+  // One entry per recipient the message was sent to.
+  repeated Delivery deliveries = 1;
+
+  // The event's SEQUENCE after the method ran, RFC 5545 section 3.8.7.4.
+  int32 sequence = 2;
+}
+
+// Request message for Scheduling.CancelEvent, RFC 5546 section 3.2.5 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.5>.
+message CancelEventRequest {
+  // The event to cancel.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // Cancel only these instances of a recurring event, by their recurrence
+  // identifiers. Empty cancels the whole event, section 3.2.5 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.5>.
+  repeated CalendarTime instances = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Why, carried as COMMENT.
+  string comment = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Scheduling.CancelEvent, matching the RPC name per
+// AIP-136 <https://aip.dev/136>.
+message CancelEventResponse {
+  // One entry per recipient the message was sent to.
+  repeated Delivery deliveries = 1;
+
+  // The event's SEQUENCE after the cancellation, RFC 5545 section 3.8.7.4.
+  // Setting STATUS to CANCELLED is a SEQUENCE-incrementing change, per RFC
+  // 5546 section 2.1.4 <https://www.rfc-editor.org/rfc/rfc5546.html#section-2.1.4>.
+  int32 sequence = 2;
+}
+
+// Request message for Scheduling.DeclineCounterEvent, RFC 5546
+// section 3.2.8 <https://www.rfc-editor.org/rfc/rfc5546.html#section-3.2.8>.
+message DeclineCounterEventRequest {
+  // The event whose counter-proposal is being declined.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // The attendee whose proposal is declined.
+  string attendee = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Why, carried as COMMENT.
+  string comment = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Scheduling.DeclineCounterEvent, matching the RPC
+// name per AIP-136 <https://aip.dev/136>. Declining a counter-proposal
+// leaves the event unchanged, so there is no SEQUENCE to report.
+message DeclineCounterEventResponse {
+  // One entry per recipient the message was sent to -- the attendee.
+  repeated Delivery deliveries = 1;
+}
