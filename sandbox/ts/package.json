@@ -1,0 +1,11 @@
+{
+  "name": "@the-protobuf-project/protobuf-rfc-sandbox",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@bufbuild/protobuf": "^2"
+  },
+  "devDependencies": {
+    "typescript": "^5"
+  }
+}

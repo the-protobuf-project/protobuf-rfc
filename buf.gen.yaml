@@ -1,22 +1,43 @@
+# Code generation for Go, Java and Python. TypeScript is in buf.gen.ts.yaml,
+# which needs --include-imports.
+#
+# CI generates every target and compiles it -- see scripts/sandbox-build.sh.
+# Nothing is committed; `gen/` is gitignored.
+#
+# No .proto file carries a `go_package`, because the right value depends on
+# where the code lands. Managed mode supplies it here, and a consumer
+# generating into their own tree overrides it the same way.
 version: v2
-# Intentionally no plugins.
-#
-# protobuf-rfc is published as a schema registry module, not as generated code.
-# Consumers add it to their own buf.yaml deps and run their own generation, so
-# `buf generate` here is a no-op and CI does not run it.
-#
-# There is deliberately no `go_package` in any file. The Go import path
-# depends entirely on where a consumer generates, so any value committed here
-# would be wrong for everyone but its author. Consumers set it themselves:
-#
-#   managed:
-#     enabled: true
-#     override:
-#       - file_option: go_package_prefix
-#         value: github.com/their-org/their-repo/gen
-#
-# `java_package` is a different case and is still set on every file -- see
-# CLAUDE.md rule 3; api-linter mandates it and no rule here may be disabled.
 managed:
   enabled: true
-plugins: []
+  disable:
+    # Every file sets these explicitly and api-linter checks them; managed
+    # mode must not overwrite what the linter validated.
+    - file_option: java_package
+    - file_option: java_outer_classname
+    - file_option: java_multiple_files
+    # Dependencies keep their own canonical Go import paths. Without this the
+    # prefix below is applied to google/api and buf/validate too, producing
+    # imports into a gen/go/google/api that this module never generates.
+    - file_option: go_package
+      module: buf.build/googleapis/googleapis
+    - file_option: go_package
+      module: buf.build/bufbuild/protovalidate
+  override:
+    - file_option: go_package_prefix
+      value: github.com/the-protobuf-project/protobuf-rfc/gen/go
+plugins:
+  - remote: buf.build/protocolbuffers/go
+    out: gen/go
+    opt: paths=source_relative
+  - remote: buf.build/grpc/go
+    out: gen/go
+    opt: paths=source_relative
+
+  - remote: buf.build/protocolbuffers/java
+    out: gen/java
+
+  - remote: buf.build/protocolbuffers/python
+    out: gen/python
+  - remote: buf.build/protocolbuffers/pyi
+    out: gen/python

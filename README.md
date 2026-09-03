@@ -3,8 +3,9 @@
 Protobuf schemas for things the IETF already specified — vCard, iCalendar,
 LDAP directory entries — shaped to Google's API Improvement Proposals.
 
-Published as a **schema-only module**. Nothing is generated in this
-repository; you depend on the module and generate for your own language.
+Published as a schema module on the BSR. Depend on it and generate for your
+own language, or take the SDKs CI builds — Go, TypeScript, Python and Java are
+all generated and compiled on every change.
 
 ## Using it
 
@@ -41,8 +42,30 @@ plugins:
     opt: paths=source_relative
 ```
 
-`java_package` *is* set on every file (`io.github.theprotobufproject.*`) because api-linter
-requires it. Override it the same way if you need a different root.
+`java_package` *is* set on every file (`io.github.theprotobufproject.*`)
+because api-linter requires it (AIP-191). Override it the same way if you need
+a different root.
+
+### Generating locally
+
+```sh
+buf generate                                              # Go, Java, Python
+buf generate --template buf.gen.ts.yaml --include-imports # TypeScript
+```
+
+TypeScript is generated separately because protoc-gen-es emits relative
+imports for every dependency, so its output has to be self-contained. The
+other three resolve dependencies through published runtime packages.
+
+To generate *and compile*, which is what CI does:
+
+```sh
+./scripts/sandbox-build.sh all        # or: go | typescript | python | java
+```
+
+Build only — nothing is run, packaged or published. It exists to prove the
+schema produces code a consumer can actually compile, which `buf lint` cannot
+tell you. The per-language scaffolding is in `sandbox/`.
 
 ## What is in it
 

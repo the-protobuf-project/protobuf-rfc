@@ -1,37 +1,43 @@
-name: ci
+name: CI
 
 on:
   push:
     branches: [main]
   pull_request:
 
+permissions:
+  contents: read
+
 jobs:
-  lint:
+  Lint:
+    name: Lint
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
 
-      - uses: bufbuild/buf-action@v1
+      - name: Setup Buf
+        uses: bufbuild/buf-action@v1
         with:
           setup_only: true
 
-      # buf format is a gate, not a convenience. Without it, whichever editor
+      # Formatting is a gate, not a convenience: without it whichever editor
       # last opened a file decides how it wraps.
-      - name: Format
+      - name: Check Formatting
         run: buf format --diff --exit-code
 
-      - name: Lint
+      - name: Lint Protos
         run: buf lint
 
-      - name: Build
+      - name: Build Descriptor Set
         run: buf build
 
       # Resolves buf.yaml deps itself, so googleapis and protovalidate are
       # available without a hand-built descriptor set. ignore-comment-disables
       # enforces CLAUDE.md rule 1: no rule may be disabled, including by an
-      # inline comment in a proto.
-      - name: API design lint
-        uses: the-protobuf-project/setup-google-api-linter@v1
+      # inline comment inside a proto.
+      - name: Lint API Design
+        uses: the-protobuf-project/setup-google-api-linter@v1.0.0
         with:
           paths: protobuf/**/*.proto
           buf: true
@@ -40,41 +46,112 @@ jobs:
           fail-on-error: true
 
       # Shared with scripts/lint.sh so local and CI enforce the same cap.
-      - name: File length cap
+      - name: Check File Length Cap
         run: ./scripts/check-line-cap.sh
 
-  breaking:
+  BreakingChange:
+    name: Breaking Change
+    # Pull requests only. On a push to main there is nothing meaningful to
+    # compare against: the BSR module may not exist yet, and comparing main
+    # to itself is vacuous.
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
-    # Compares against the published module once it exists, the branch until
-    # then. Runs on main too, because push-module depends on it.
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: bufbuild/buf-action@v1
+
+      - name: Setup Buf
+        uses: bufbuild/buf-action@v1
         with:
           setup_only: true
 
-      # Every rename in PLAN.md's naming table was free only because nothing
-      # had generated code yet. Once consumers exist, this is what keeps a
-      # rename from becoming a silent break.
-      - name: Check for breaking changes
+      # Against the local checkout, not an https URL. Cloning the remote needs
+      # credentials the job does not have on a private repository, which is
+      # what broke this step before.
+      - name: Compare Against Base Commit
         run: |
-          buf breaking --against "buf.build/the-protobuf-project/protobuf-rfc" || \
-            buf breaking --against "https://github.com/${{ github.repository }}.git#branch=main"
+          buf breaking --against ".git#ref=${{ github.event.pull_request.base.sha }}"
 
-  push-module:
-    # Publishes the schema module to the BSR. Only from main, and only after
-    # both gates pass — a module pushed with a breaking change cannot be
-    # recalled, only superseded.
-    needs: [lint, breaking]
+  GenerateAndBuild:
+    name: Generate And Build (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: Go
+            target: go
+          - language: TypeScript
+            target: typescript
+          - language: Python
+            target: python
+          - language: Java
+            target: java
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Buf
+        uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      - name: Setup Go
+        if: matrix.language == 'Go'
+        uses: actions/setup-go@v5
+        with:
+          go-version: stable
+
+      - name: Setup Node
+        if: matrix.language == 'TypeScript'
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup Python
+        if: matrix.language == 'Python'
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Setup Java
+        if: matrix.language == 'Java'
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      # Generates the SDK and compiles it. Compile only -- nothing is run,
+      # packaged or published. `buf lint` cannot tell you whether the schema
+      # produces code a consumer can actually build; this can.
+      - name: Sandbox Build
+        run: ./scripts/sandbox-build.sh ${{ matrix.target }}
+
+  PublishModule:
+    name: Publish Module
+    needs: [Lint, GenerateAndBuild]
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     runs-on: ubuntu-latest
+    env:
+      BUF_TOKEN: ${{ secrets.BUF_TOKEN }}
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - uses: bufbuild/buf-action@v1
+
+      # Skipped rather than failed when BUF_TOKEN is absent. Secrets cannot be
+      # read in a job-level `if`, but job-level env can, so the guard is here.
+      - name: Push To BSR
+        if: env.BUF_TOKEN != ''
+        uses: bufbuild/buf-action@v1
         with:
-          push: true
           token: ${{ secrets.BUF_TOKEN }}
+          push: true
+          # No push_create_visibility: the module is created by hand in the
+          # BSR with the intended visibility. Letting CI create it would make
+          # that choice silently on the first green build.
+          push_disable_create: true

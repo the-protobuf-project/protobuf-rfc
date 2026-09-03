@@ -1,0 +1,6 @@
+# Runtime packages the generated Python needs. buf/validate comes from
+# protovalidate; google/api and google/longrunning from
+# googleapis-common-protos.
+protobuf
+googleapis-common-protos
+protovalidate

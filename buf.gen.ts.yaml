@@ -1,0 +1,9 @@
+# TypeScript is generated separately because it needs --include-imports.
+# protoc-gen-es emits relative imports for every dependency, so a tree without
+# google/longrunning and buf/validate alongside it does not typecheck. Go,
+# Java and Python instead resolve those through published runtime packages.
+version: v2
+plugins:
+  - remote: buf.build/bufbuild/es
+    out: gen/ts
+    opt: target=ts
