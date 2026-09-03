@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package protobuf.shared.project.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "protobuf/shared/project/v1/project.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.project.v1";
+
+// Request message for Projects.GetProject, AIP-131 <https://aip.dev/131>.
+message GetProjectRequest {
+  // Name of the project to retrieve, "projects/{project}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Project",
+    (buf.validate.field).string.pattern = "^projects/[^/]+$"
+  ];
+}
+
+// Request message for Projects.ListProjects, AIP-132 <https://aip.dev/132>.
+message ListProjectsRequest {
+  // Maximum projects to return. Defaults to 50, capped at 1000.
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ListProjectsResponse.next_page_token.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160 <https://aip.dev/160>.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include soft-deleted projects in the result. AIP-164 <https://aip.dev/164>.
+  bool show_deleted = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Projects.ListProjects, AIP-132 <https://aip.dev/132>.
+message ListProjectsResponse {
+  // The projects on this page.
+  repeated Project projects = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+}
+
+// Request message for Projects.CreateProject, AIP-133 <https://aip.dev/133>.
+message CreateProjectRequest {
+  // The project to create.
+  Project project = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Client-assigned id, becoming the last segment of the resource name. The
+  // server generates one when empty.
+  string project_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Projects.UpdateProject, AIP-134 <https://aip.dev/134>.
+message UpdateProjectRequest {
+  // The project to update. Its name field identifies the resource.
+  Project project = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Fields to update. An empty mask updates all mutable fields.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Projects.DeleteProject, AIP-135 <https://aip.dev/135>.
+message DeleteProjectRequest {
+  // Name of the project to delete, "projects/{project}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Project",
+    (buf.validate.field).string.pattern = "^projects/[^/]+$"
+  ];
+}
+
+// Request message for Projects.UndeleteProject, AIP-164 <https://aip.dev/164>.
+message UndeleteProjectRequest {
+  // Name of the soft-deleted project to restore.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Project",
+    (buf.validate.field).string.pattern = "^projects/[^/]+$"
+  ];
+}

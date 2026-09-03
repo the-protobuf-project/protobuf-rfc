@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.todo.v1;
+
+option java_multiple_files = true;
+option java_outer_classname = "TypesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.todo.v1";
+
+// Completion is the STATUS property for a VTODO, RFC 5545 section 3.8.1.11 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.11>.
+//
+// Not named Status or State: AIP-216 <https://aip.dev/216> reserves both for server-owned
+// lifecycle and requires OUTPUT_ONLY, but a client sets this one by working
+// on the todo. The values are the RFC's; VEVENT and VJOURNAL define different
+// sets for the same property, so each component has its own enum.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.1.11.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.11
+enum Completion {
+  // Not specified.
+  COMPLETION_UNSPECIFIED = 0;
+
+  // NEEDS-ACTION. Not started.
+  COMPLETION_NEEDS_ACTION = 1;
+
+  // IN-PROCESS. Started, not finished.
+  COMPLETION_IN_PROCESS = 2;
+
+  // COMPLETED. Finished; completed_time records when.
+  COMPLETION_COMPLETED = 3;
+
+  // CANCELLED. Abandoned rather than finished.
+  COMPLETION_CANCELLED = 4;
+}
+
+// Classification is the CLASS property, RFC 5545 section 3.8.1.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3>.
+//
+// A copy of the identical enum in protobuf.rfc5545.event.v1, not a reference
+// to it. AIP-215 permits no cross-package message reference, so a value type
+// shared between iCalendar components must be duplicated per component
+// package. The two are kept byte-identical deliberately: a codec that maps
+// CLASS for events and todos must not have to special-case which it is
+// looking at.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.1.3.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3
+enum Classification {
+  // Not specified; treat as CLASSIFICATION_PUBLIC, the default in
+  // section 3.8.1.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3>.
+  CLASSIFICATION_UNSPECIFIED = 0;
+
+  // PUBLIC.
+  CLASSIFICATION_PUBLIC = 1;
+
+  // PRIVATE.
+  CLASSIFICATION_PRIVATE = 2;
+
+  // CONFIDENTIAL.
+  CLASSIFICATION_CONFIDENTIAL = 3;
+}

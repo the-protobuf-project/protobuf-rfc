@@ -1,0 +1,141 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.todo.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc5545/todo/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "TodoProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.todo.v1";
+
+// Todo is the VTODO component, RFC 5545 section 3.6.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.2>.
+//
+// Same shape as Event: a resource whose calendar properties sit directly on
+// it, parented by a Calendar. What it adds over an event is a notion of
+// finishing -- a due date, a completion instant, and a percentage.
+//
+// Scope note: CLASS is modelled here, and its enum is a copy of the one in
+// protobuf.rfc5545.event.v1 rather than a reference. AIP-215 permits no
+// cross-package message reference, so every value type shared between
+// iCalendar components must be duplicated per component package. RRULE,
+// ATTENDEE, ORGANIZER and VALARM are therefore deliberately absent until a
+// consumer needs them on a todo -- see plan/03-rfc5545-icalendar.md.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.6.2.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.2
+message Todo {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/Todo"
+    pattern: "calendars/{calendar}/todos/{todo}"
+    singular: "todo"
+    plural: "todos"
+  };
+  option (buf.validate.message).cel = {
+    id: "todo.completed_implies_complete"
+    message: "a COMPLETED todo must have percent_complete 100 (RFC 5545 section 3.8.1.8)"
+    expression: "this.completion != 3 || this.percent_complete == 100"
+  };
+
+  // Resource name, "calendars/{calendar}/todos/{todo}".
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/todos/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // UID, section 3.8.4.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.7>. The interchange identity, distinct from uid
+  // above: it arrives inside an imported .ics and must survive a round trip.
+  string ical_uid = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // SUMMARY, section 3.8.1.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.12>. The short title.
+  string summary = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // DESCRIPTION, section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>.
+  string description = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // LOCATION, section 3.8.1.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.7>.
+  string location = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // DTSTART, section 3.8.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.4>. When work may begin. Optional on a todo,
+  // unlike an event, where it is what the event *is*.
+  google.protobuf.Timestamp start_time = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // Section 3.6.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.2> permits DUE or DURATION but not both, and DURATION is
+  // meaningless without DTSTART. The oneof enforces the first constraint;
+  // the second is left to the server, which knows whether start_time is set.
+  oneof deadline {
+    // DUE, section 3.8.2.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.3>. When it must be finished.
+    google.protobuf.Timestamp due_time = 8;
+
+    // DURATION, section 3.8.2.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.5>. How long it should take, measured from
+    // start_time.
+    google.protobuf.Duration duration = 9;
+  }
+
+  // COMPLETED, section 3.8.2.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.1>. When it was actually finished.
+  google.protobuf.Timestamp completed_time = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // PERCENT-COMPLETE, section 3.8.1.8 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.8>. 0 to 100.
+  int32 percent_complete = 11 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+
+  // PRIORITY, section 3.8.1.9 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.9>. 0 is undefined, 1 is highest, 9 lowest.
+  int32 priority = 12 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 9
+    }
+  ];
+
+  // STATUS, section 3.8.1.11 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.11>. VTODO defines its own value set, which is
+  // why this is not the enum VEVENT uses.
+  Completion completion = 13 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // CLASS, section 3.8.1.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3>.
+  Classification classification = 14 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // Weak validator for optimistic concurrency, AIP-154. Pass it back in an
+  // update or delete to make the write conditional.
+  string etag = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the todo was soft-deleted, unset while it is live. AIP-164.
+  google.protobuf.Timestamp delete_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted todo is purged for good. AIP-164.
+  google.protobuf.Timestamp expire_time = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the todo was created.
+  google.protobuf.Timestamp create_time = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the todo was last modified.
+  google.protobuf.Timestamp update_time = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

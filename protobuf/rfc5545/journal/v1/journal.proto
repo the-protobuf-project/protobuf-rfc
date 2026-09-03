@@ -1,0 +1,100 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.journal.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc5545/journal/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "JournalProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.journal.v1";
+
+// Journal is the VJOURNAL component, RFC 5545 section 3.6.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.3>.
+//
+// A dated note attached to a calendar. Unlike Event and Todo it consumes no
+// time -- section 3.6.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.3> gives it no DTEND, DURATION or DUE, and it never
+// affects free/busy.
+//
+// Scope note: its Classification enum is a copy of the one in
+// protobuf.rfc5545.event.v1, not a reference. AIP-215 permits no
+// cross-package message reference, so value types shared between iCalendar
+// components are duplicated per component package.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.6.3.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.3
+message Journal {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/Journal"
+    pattern: "calendars/{calendar}/journals/{journal}"
+    singular: "journal"
+    plural: "journals"
+  };
+
+  // Resource name, "calendars/{calendar}/journals/{journal}".
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/journals/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // UID, section 3.8.4.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.7>. The interchange identity, distinct from uid
+  // above: it arrives inside an imported .ics and must survive a round trip.
+  string ical_uid = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // DTSTART, section 3.8.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.4>. The date the entry is filed under. Often a
+  // date rather than a date-time, since a journal entry is about a day.
+  google.protobuf.Timestamp start_time = 4 [(google.api.field_behavior) = REQUIRED];
+
+  // SUMMARY, section 3.8.1.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.12>. The short title.
+  string summary = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // DESCRIPTION, section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>. The body.
+  //
+  // Repeated, unlike on Event and Todo. Section 3.6.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.3> lets DESCRIPTION occur
+  // more than once in a VJOURNAL and only once in the others -- a journal
+  // entry may hold several distinct notes for the same day.
+  repeated string descriptions = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // STATUS, section 3.8.1.11 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.11>. VJOURNAL defines its own value set.
+  Publication publication = 7 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // CLASS, section 3.8.1.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3>.
+  Classification classification = 8 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // Weak validator for optimistic concurrency, AIP-154. Pass it back in an
+  // update or delete to make the write conditional.
+  string etag = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the journal was soft-deleted, unset while it is live. AIP-164.
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted journal is purged for good. AIP-164.
+  google.protobuf.Timestamp expire_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the journal was created.
+  google.protobuf.Timestamp create_time = 12 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the journal was last modified.
+  google.protobuf.Timestamp update_time = 13 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

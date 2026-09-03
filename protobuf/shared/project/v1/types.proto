@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package protobuf.shared.project.v1;
+
+option java_multiple_files = true;
+option java_outer_classname = "TypesProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.project.v1";
+
+// ProjectState is where a project sits in its lifecycle.
+//
+// Native, like Project itself. Named State rather than a synonym because
+// AIP-216 <https://aip.dev/216> reserves the word for exactly this: a server-owned lifecycle
+// enum on an OUTPUT_ONLY field. The iCalendar status enums could not use it
+// because clients set those.
+enum ProjectState {
+  // Not specified.
+  PROJECT_STATE_UNSPECIFIED = 0;
+
+  // Work is under way.
+  PROJECT_STATE_ACTIVE = 1;
+
+  // Started and deliberately halted, expected to resume.
+  PROJECT_STATE_PAUSED = 2;
+
+  // Finished.
+  PROJECT_STATE_COMPLETED = 3;
+
+  // Abandoned rather than finished. Distinct from COMPLETED because the two
+  // mean opposite things to anything reporting on delivery.
+  PROJECT_STATE_CANCELLED = 4;
+}

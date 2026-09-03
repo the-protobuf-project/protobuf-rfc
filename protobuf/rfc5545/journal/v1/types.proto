@@ -1,0 +1,53 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.journal.v1;
+
+option java_multiple_files = true;
+option java_outer_classname = "TypesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.journal.v1";
+
+// Publication is the STATUS property for a VJOURNAL, RFC 5545
+// section 3.8.1.11 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.11>.
+//
+// Not named Status or State: AIP-216 <https://aip.dev/216> reserves both for server-owned
+// lifecycle. An author sets this one by publishing. VEVENT and VTODO define
+// different value sets for the same property, so each has its own enum.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.1.11.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.11
+enum Publication {
+  // Not specified.
+  PUBLICATION_UNSPECIFIED = 0;
+
+  // DRAFT. Still being written.
+  PUBLICATION_DRAFT = 1;
+
+  // FINAL. Published.
+  PUBLICATION_FINAL = 2;
+
+  // CANCELLED. Withdrawn.
+  PUBLICATION_CANCELLED = 3;
+}
+
+// Classification is the CLASS property, RFC 5545 section 3.8.1.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3>.
+//
+// A copy of the identical enum in protobuf.rfc5545.event.v1 and
+// protobuf.rfc5545.todo.v1, not a reference. AIP-215 permits no cross-package
+// message reference. Kept byte-identical across the three deliberately.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.1.3.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3
+enum Classification {
+  // Not specified; treat as CLASSIFICATION_PUBLIC, the default in
+  // section 3.8.1.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3>.
+  CLASSIFICATION_UNSPECIFIED = 0;
+
+  // PUBLIC.
+  CLASSIFICATION_PUBLIC = 1;
+
+  // PRIVATE.
+  CLASSIFICATION_PRIVATE = 2;
+
+  // CONFIDENTIAL.
+  CLASSIFICATION_CONFIDENTIAL = 3;
+}

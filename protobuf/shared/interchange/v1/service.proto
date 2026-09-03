@@ -4,6 +4,7 @@ package protobuf.shared.interchange.v1;
 
 import "google/api/annotations.proto";
 import "google/longrunning/operations.proto";
+import "protobuf/shared/interchange/v1/codec.proto";
 import "protobuf/shared/interchange/v1/messages.proto";
 
 option java_multiple_files = true;
@@ -121,9 +122,9 @@ service Interchange {
   // nothing else, and guessing from the resource type is not possible -- the
   // pairing is a deployment fact, not a property of either string.
   //
-  // Unpaginated and safe. The result changes only when the service is
-  // redeployed with different codecs registered, so it is cacheable for the
-  // lifetime of a connection.
+  // Safe and paginated like any other List (AIP-158). The result changes only
+  // when the service is redeployed with different codecs registered, so it is
+  // cacheable for the lifetime of a connection.
   //
   //   INVALID_ARGUMENT   malformed resource_type
   rpc ListCodecs(ListCodecsRequest) returns (ListCodecsResponse) {

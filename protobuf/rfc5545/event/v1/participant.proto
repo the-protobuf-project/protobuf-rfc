@@ -1,0 +1,159 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ParticipantProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Attendee is the ATTENDEE property, RFC 5545 section 3.8.4.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.1>.
+//
+// The property value is a CAL-ADDRESS -- in practice a mailto: URI -- and
+// everything that makes an attendee useful is carried in its parameters
+// rather than its value. Those parameters are the fields below.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.4.1.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.1
+message Attendee {
+  // The CAL-ADDRESS itself, e.g. "mailto:jane@example.com".
+  string address = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.uri = true
+  ];
+
+  // CN, section 3.2.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.2>. The name to show instead of the address.
+  string display_name = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // ROLE, section 3.2.16 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.16>.
+  ParticipationRole role = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // PARTSTAT, section 3.2.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.12>. Whether they have replied, and how.
+  Participation participation = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // CUTYPE, section 3.2.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.3>. A room and a person are both attendees.
+  CalendarUserType user_type = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // RSVP, section 3.2.17 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.17>. Whether a reply is expected. This asks for
+  // one; it does not record whether one arrived -- that is participation.
+  bool rsvp = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // DELEGATED-TO ("Delegatees"), section 3.2.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.5>. Addresses this attendee delegated to.
+  repeated string delegatees = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // DELEGATED-FROM ("Delegators"), section 3.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.4>. Addresses that delegated to this
+  // attendee.
+  repeated string delegators = 8 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Organizer is the ORGANIZER property, RFC 5545 section 3.8.4.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.3>.
+//
+// Distinct from an Attendee with ROLE=CHAIR: the organizer owns the event and
+// is who iTIP replies are addressed to, which is a scheduling fact rather than
+// a statement about who runs the meeting.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.4.3.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.3
+message Organizer {
+  // The CAL-ADDRESS itself.
+  string address = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.uri = true
+  ];
+
+  // CN, section 3.2.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.2>.
+  string display_name = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // SENT-BY, section 3.2.18 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.18>. The address that actually sent this on
+  // the organizer's behalf -- an assistant scheduling for an executive.
+  string sender = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// ParticipationRole is the ROLE parameter, RFC 5545 section 3.2.16 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.16>.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.2.16.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.16
+enum ParticipationRole {
+  // Not specified; treat as PARTICIPATION_ROLE_REQUIRED, the default in
+  // section 3.2.16 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.16>.
+  PARTICIPATION_ROLE_UNSPECIFIED = 0;
+
+  // CHAIR. Chairs the calendar entity.
+  PARTICIPATION_ROLE_CHAIR = 1;
+
+  // REQ-PARTICIPANT. Attendance is required.
+  PARTICIPATION_ROLE_REQUIRED = 2;
+
+  // OPT-PARTICIPANT. Attendance is optional.
+  PARTICIPATION_ROLE_OPTIONAL = 3;
+
+  // NON-PARTICIPANT. Copied for information only.
+  PARTICIPATION_ROLE_NON_PARTICIPANT = 4;
+}
+
+// Participation is the PARTSTAT parameter for a VEVENT, RFC 5545
+// section 3.2.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.12>.
+//
+// Not named Status or State: AIP-216 <https://aip.dev/216> reserves both for server-owned
+// lifecycle and requires such a field to be OUTPUT_ONLY, but an attendee sets
+// this one by replying. VTODO and VJOURNAL define different value sets for the
+// same parameter; this enum is the VEVENT set only.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.2.12.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.12
+enum Participation {
+  // Not specified; treat as PARTICIPATION_NEEDS_ACTION, the default in
+  // section 3.2.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.12>.
+  PARTICIPATION_UNSPECIFIED = 0;
+
+  // NEEDS-ACTION. No reply yet.
+  PARTICIPATION_NEEDS_ACTION = 1;
+
+  // ACCEPTED.
+  PARTICIPATION_ACCEPTED = 2;
+
+  // DECLINED.
+  PARTICIPATION_DECLINED = 3;
+
+  // TENTATIVE.
+  PARTICIPATION_TENTATIVE = 4;
+
+  // DELEGATED. Passed to someone in delegated_to.
+  PARTICIPATION_DELEGATED = 5;
+}
+
+// CalendarUserType is the CUTYPE parameter, RFC 5545 section 3.2.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.3>.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.2.3.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.3
+enum CalendarUserType {
+  // Not specified; treat as CALENDAR_USER_TYPE_INDIVIDUAL, the default in
+  // section 3.2.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.3>.
+  CALENDAR_USER_TYPE_UNSPECIFIED = 0;
+
+  // INDIVIDUAL. A person.
+  CALENDAR_USER_TYPE_INDIVIDUAL = 1;
+
+  // GROUP. A group of individuals.
+  CALENDAR_USER_TYPE_GROUP = 2;
+
+  // RESOURCE. A bookable resource, e.g. a projector.
+  CALENDAR_USER_TYPE_RESOURCE = 3;
+
+  // ROOM.
+  CALENDAR_USER_TYPE_ROOM = 4;
+
+  // UNKNOWN.
+  CALENDAR_USER_TYPE_UNKNOWN = 5;
+}

@@ -8,6 +8,8 @@ import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
+import "protobuf/rfc5545/event/v1/alarm.proto";
+import "protobuf/rfc5545/event/v1/participant.proto";
 import "protobuf/rfc5545/event/v1/recurrence.proto";
 import "protobuf/rfc5545/event/v1/types.proto";
 
@@ -137,6 +139,17 @@ message Event {
 
   // When the event was last modified.
   google.protobuf.Timestamp update_time = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // ORGANIZER, section 3.8.4.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.3>. Who owns the event and receives
+  // iTIP replies about it.
+  Organizer organizer = 22 [(google.api.field_behavior) = OPTIONAL];
+
+  // ATTENDEE, section 3.8.4.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.1>. Who is invited, and how each replied.
+  repeated Attendee attendees = 23 [(google.api.field_behavior) = OPTIONAL];
+
+  // VALARM sub-components, section 3.6.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.6>. Reminders attached to this
+  // event. Not resources: an alarm has no identity and dies with its event.
+  repeated Alarm alarms = 24 [(google.api.field_behavior) = OPTIONAL];
 
   // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. Pass it back in an
   // update or delete to make the write conditional: if the resource changed

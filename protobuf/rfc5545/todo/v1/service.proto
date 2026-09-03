@@ -1,0 +1,137 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.todo.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/protobuf/empty.proto";
+import "protobuf/rfc5545/todo/v1/messages.proto";
+import "protobuf/rfc5545/todo/v1/todo.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.todo.v1";
+
+// Todos manages RFC 5545 todos as resources.
+//
+// The AIP-131..135 standard methods plus AIP-164 undelete, and nothing else.
+// Serializing to a file is not a todo-specific concern -- that lives in
+// protobuf.shared.interchange.v1.Interchange, which handles any resource type.
+service Todos {
+  // Retrieves one todo.
+  //
+  //   GET /v1/{name=calendars/*/todos/*}
+  //
+  // Safe and idempotent. Read the `etag` here and pass it back on update or
+  // delete to make the write conditional.
+  //
+  //   NOT_FOUND          no such todo, or it is soft-deleted
+  //   INVALID_ARGUMENT   name does not match calendars/*/todos/*
+  //   PERMISSION_DENIED  caller may not read it
+  rpc GetTodo(GetTodoRequest) returns (Todo) {
+    option (google.api.http) = {get: "/v1/{name=calendars/*/todos/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists the todos of a calendar.
+  //
+  //   GET /v1/{parent=calendars/*}/todos
+  //
+  // Paginated per AIP-158: pass `page_size` (defaults to 50, capped at 1000)
+  // and the `next_page_token` from the previous response. Page tokens are
+  // opaque and may expire; do not construct or store them.
+  //
+  // Scoped to one calendar through `parent`; there is no cross-calendar
+  // listing. Filtering uses AIP-160 over the resource's own fields.
+  //
+  //   INVALID_ARGUMENT   malformed filter, or page_size out of range
+  //   PERMISSION_DENIED  caller may not list this collection
+  rpc ListTodos(ListTodosRequest) returns (ListTodosResponse) {
+    option (google.api.http) = {get: "/v1/{parent=calendars/*}/todos"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Creates a todo.
+  //
+  //   POST /v1/{parent=calendars/*}/todos
+  //   body: the todo itself
+  //
+  // Server-assigned fields on the request body are ignored: `name`, `uid`,
+  // `etag` and the timestamps are set by the server regardless. Supply
+  // `todo_id` to choose the final path segment.
+  //
+  // Not idempotent. Retrying after a timeout may create a second todo;
+  // supply `todo_id` if the caller needs retry safety.
+  //
+  //   ALREADY_EXISTS     that todo_id is taken
+  //   INVALID_ARGUMENT   a field violates its buf.validate constraint
+  //   PERMISSION_DENIED  caller may not create here
+  rpc CreateTodo(CreateTodoRequest) returns (Todo) {
+    option (google.api.http) = {
+      post: "/v1/{parent=calendars/*}/todos"
+      body: "todo"
+    };
+    option (google.api.method_signature) = "parent,todo,todo_id";
+  }
+
+  // Updates a todo.
+  //
+  //   PATCH /v1/{todo.name=calendars/*/todos/*}
+  //   body: the todo itself
+  //
+  // A partial update: only fields named in `update_mask` are written. An
+  // empty mask writes every mutable field, clearing anything the caller left
+  // unset -- pass a mask unless that is the intent. OUTPUT_ONLY and IMMUTABLE
+  // fields are rejected rather than silently dropped.
+  //
+  // Idempotent. Pass the `etag` read from Get to make the write conditional.
+  //
+  //   NOT_FOUND          no such todo
+  //   ABORTED            etag does not match the stored resource
+  //   INVALID_ARGUMENT   mask names an unknown or immutable field
+  //   PERMISSION_DENIED  caller may not modify it
+  rpc UpdateTodo(UpdateTodoRequest) returns (Todo) {
+    option (google.api.http) = {
+      patch: "/v1/{todo.name=calendars/*/todos/*}"
+      body: "todo"
+    };
+    option (google.api.method_signature) = "todo,update_mask";
+  }
+
+  // Deletes a todo.
+  //
+  //   DELETE /v1/{name=calendars/*/todos/*}
+  //
+  // Soft delete: the todo is marked deleted, disappears from List unless
+  // `show_deleted` is set, and is purged at `expire_time`. Recover it with
+  // Undelete before then.
+  //
+  // Idempotent in effect but not in reporting: a second delete returns
+  // NOT_FOUND rather than succeeding silently.
+  //
+  //   NOT_FOUND          no such todo
+  //   ABORTED            etag does not match
+  //   PERMISSION_DENIED  caller may not delete it
+  rpc DeleteTodo(DeleteTodoRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=calendars/*/todos/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Restores a soft-deleted todo.
+  //
+  //   POST /v1/{name=calendars/*/todos/*}:undelete
+  //
+  // Valid only before `expire_time`; after that the todo is gone and this
+  // returns NOT_FOUND. Clears `delete_time` and `expire_time`.
+  //
+  //   NOT_FOUND          no such todo, or already purged
+  //   ALREADY_EXISTS     the todo is not deleted
+  //   PERMISSION_DENIED  caller may not restore it
+  rpc UndeleteTodo(UndeleteTodoRequest) returns (Todo) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/todos/*}:undelete"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}

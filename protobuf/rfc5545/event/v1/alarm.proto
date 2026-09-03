@@ -1,0 +1,136 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc5545/event/v1/participant.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "AlarmProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Alarm is the VALARM component, RFC 5545 section 3.6.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.6>.
+//
+// A sub-component of VEVENT and VTODO, not a component of its own. It is a
+// value object here for the same reason: an alarm has no identity, is never
+// addressed, and disappears with the event that owns it. It gets no resource,
+// no service and no messages file.
+//
+// Which properties are required depends on `action`, which section 3.6.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.6>
+// specifies as three different property sets rather than one with optional
+// members. That is expressed here as documented constraints rather than a
+// oneof, because the shared properties -- trigger, repeat -- apply to all
+// three and a oneof would force them to be repeated per branch.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.6.6.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.6
+message Alarm {
+  option (buf.validate.message).cel = {
+    id: "alarm.display_needs_description"
+    message: "a DISPLAY alarm requires description (RFC 5545 section 3.6.6)"
+    expression: "this.action != 2 || this.description != ''"
+  };
+  option (buf.validate.message).cel = {
+    id: "alarm.email_needs_description_and_summary"
+    message:
+      "an EMAIL alarm requires description, summary and at least one attendee "
+      "(RFC 5545 section 3.6.6)"
+    expression:
+      "this.action != 3 || (this.description != '' && this.summary != '' && "
+      "this.attendees.size() > 0)"
+  };
+  option (buf.validate.message).cel = {
+    id: "alarm.repeat_needs_interval"
+    message: "repeat_count requires repeat_interval (RFC 5545 section 3.8.6.2)"
+    expression: "this.repeat_count == 0 || has(this.repeat_interval)"
+  };
+
+  // ACTION, section 3.8.6.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.1>. Decides which other fields are required.
+  AlarmAction action = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // TRIGGER, section 3.8.6.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.3>. When the alarm fires: either an offset
+  // from the owning component or an absolute instant, never both.
+  oneof trigger {
+    // A duration relative to `trigger_relation`. Negative fires before --
+    // "-PT15M" is the familiar fifteen-minute warning.
+    google.protobuf.Duration trigger_offset = 2;
+
+    // An absolute instant, independent of the component's own times.
+    google.protobuf.Timestamp trigger_time = 3;
+  }
+
+  // RELATED, section 3.2.14 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14>. Whether trigger_offset counts from the
+  // component's start or its end. Meaningless when trigger_time is set.
+  TriggerRelation trigger_relation = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // DURATION, section 3.8.2.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.5>. Gap between repeats. Required if
+  // repeat_count is set.
+  google.protobuf.Duration repeat_interval = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // REPEAT, section 3.8.6.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.2>. How many additional times the alarm
+  // fires after the first.
+  int32 repeat_count = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32.gte = 0
+  ];
+
+  // DESCRIPTION, section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>. The text shown, or the body of the
+  // email. Required for DISPLAY and EMAIL.
+  string description = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // SUMMARY, section 3.8.1.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.12>. The email subject. Required for EMAIL.
+  string summary = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // ATTENDEE, section 3.8.4.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.1>. Who the email goes to. Required for
+  // EMAIL, meaningless otherwise.
+  repeated Attendee attendees = 9 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// AlarmAction is the ACTION property, RFC 5545 section 3.8.6.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.1>.
+//
+// RFC 2445 also defined PROCEDURE, which ran an arbitrary program on the
+// viewer's machine. RFC 5545 dropped it, and it is not modelled here.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.6.1.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.1
+enum AlarmAction {
+  // Not specified. Invalid in an alarm; ACTION is mandatory.
+  ALARM_ACTION_UNSPECIFIED = 0;
+
+  // AUDIO. Play a sound.
+  ALARM_ACTION_AUDIO = 1;
+
+  // DISPLAY. Show description as text.
+  ALARM_ACTION_DISPLAY = 2;
+
+  // EMAIL. Send description to attendees under subject summary.
+  ALARM_ACTION_EMAIL = 3;
+}
+
+// TriggerRelation is the RELATED parameter, RFC 5545 section 3.2.14 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14>.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.2.14.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14
+enum TriggerRelation {
+  // Not specified; treat as TRIGGER_RELATION_START, the default in
+  // section 3.2.14 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14>.
+  TRIGGER_RELATION_UNSPECIFIED = 0;
+
+  // START. Offset counts from the component's start.
+  TRIGGER_RELATION_START = 1;
+
+  // END. Offset counts from the component's end.
+  TRIGGER_RELATION_END = 2;
+}

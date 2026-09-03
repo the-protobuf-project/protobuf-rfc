@@ -1,0 +1,65 @@
+syntax = "proto3";
+
+package protobuf.shared.interchange.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "CodecProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.interchange.v1";
+
+// A registered codec: one (resource_type, media_type) pair Interchange can
+// move.
+message Codec {
+  // Resource type the codec handles, e.g. "protobufrfc.dev/User".
+  string resource_type = 1;
+
+  // RFC 6838 media type it reads or writes, e.g. "text/vcard".
+  string media_type = 2;
+
+  // Whether ExportResources accepts this pair.
+  bool can_export = 3;
+
+  // Whether ImportResources accepts this pair.
+  //
+  // Separate from can_export because the two directions are not symmetric: a
+  // format can be parseable long before anyone writes a serialiser for it, and
+  // a single `supported` flag would have to lie about one of them.
+  bool can_import = 4;
+}
+
+// Request message for Interchange.ListCodecs, AIP-132.
+message ListCodecsRequest {
+  // Maximum codecs to return. Defaults to 50, capped at 1000.
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ListCodecsResponse.next_page_token.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160. Narrowing to one resource type goes here
+  // rather than in a field of its own -- AIP-132 permits no custom fields on
+  // a List request, and `resource_type = "protobufrfc.dev/User"` says the
+  // same thing through the standard channel.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Interchange.ListCodecs, AIP-132.
+message ListCodecsResponse {
+  // The registered pairs on this page.
+  repeated Codec codecs = 1;
+
+  // Token for the next page, empty when this is the last page.
+  //
+  // The registry is a fixed table decided at deployment, so in practice one
+  // page holds it. Paginated anyway, per AIP-158: "it is small now" is how
+  // unbounded responses happen, and a client that assumes one page cannot be
+  // fixed later without a version.
+  string next_page_token = 2;
+}
