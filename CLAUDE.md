@@ -71,6 +71,20 @@ reintroduce wrapper messages to "fix" this — that is what the rule prohibits.
 `Uri`, `ResourceId` and `MediaType` were exactly that and were deleted,
 because nothing outside their own package could legally reference them.
 
+**`google.*` is the one exemption, so reach for `google.type` first.** It is
+the only way to share a structured value type across packages instead of
+copying it into each. Before defining any value message or enum, check what
+already exists — `docs/references.md` lists where, and how to read the
+definitions locally with `buf export`.
+
+Adopt only where the model matches. `PostalAddress` and `PhoneNumber` were
+both rejected: `PostalAddress` is `address_lines` plus region/administrative
+area, which cannot hold RFC 6350 §6.3.1's fixed seven multi-valued
+components without losing them, and `PhoneNumber` models E.164 plus short
+code, which would reject the free-text TEL values §6.4.1 explicitly permits.
+Fidelity to the RFC outranks reuse; say in the comment which you chose and
+why.
+
 Create an RFC directory only when that RFC defines something with
 **behaviour or identity**. An RFC defining a string format contributes a
 comment on a field, not a package.
@@ -148,6 +162,16 @@ rules above; the split exists only because this file has a 200-line cap of
 its own (rule 2).
 
 @docs/conventions.md
+
+## Where to look things up
+
+`docs/references.md` is a checked link index: the AIPs and their linter rule
+pages, `google/type` and the rest of googleapis, buf and protovalidate docs,
+and every RFC this schema models. **Follow the link rather than working from
+memory** — section numbers and rule semantics have both been wrong here when
+guessed.
+
+@docs/references.md
 
 ## Before you finish
 

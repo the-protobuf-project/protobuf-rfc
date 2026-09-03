@@ -63,6 +63,28 @@ jobs:
           fi
           echo "All protos carry an SPDX header."
 
+      # docs/references.md is what CLAUDE.md points at instead of working from
+      # memory, so a rotted link there is worse than no link. Private URLs are
+      # skipped: they 404 for an anonymous fetch by design.
+      - name: Check Reference Links
+        run: |
+          bad=0
+          while IFS= read -r url; do
+            case "$url" in
+              *github.com/the-protobuf-project/*|*buf.build/the-protobuf-project/*) continue ;;
+            esac
+            code=$(curl -o /dev/null -sL -w '%{http_code}' --max-time 20 "$url" || echo 000)
+            case "$code" in
+              200|301|302) ;;
+              *) echo "::error file=docs/references.md::$code $url"; bad=1 ;;
+            esac
+          done < <(grep -oE 'https://[^ )<>|`]+' docs/references.md | sed 's/[.,]$//' | sort -u)
+          if [ "$bad" -ne 0 ]; then
+            echo "Fix or replace the links above."
+            exit 1
+          fi
+          echo "All reference links resolve."
+
       # CLAUDE.md rule 2. A file over the cap gets split, never compressed.
       - name: Check File Length Cap
         run: |

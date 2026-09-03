@@ -7,6 +7,7 @@ package protobuf.rfc5545.event.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
+import "google/type/dayofweek.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "RecurrencePartsProto";
@@ -18,7 +19,12 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
 // https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10
 message WeekdayNum {
   // The day itself.
-  Weekday day = 1 [
+  //
+  // google.type.DayOfWeek rather than an enum of our own. AIP-215 exempts
+  // google.* from the cross-package ban, so this is the one kind of value
+  // type that can be shared between packages instead of copied into each --
+  // which matters the moment RRULE lands on Todo.
+  google.type.DayOfWeek day = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).enum = {
       defined_only: true
@@ -60,34 +66,4 @@ enum Frequency {
 
   // Every year.
   FREQUENCY_YEARLY = 7;
-}
-
-// Weekday is a day abbreviation from RFC 5545 section 3.3.10 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10>.
-//
-// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.3.10.
-// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10
-enum Weekday {
-  // Not specified.
-  WEEKDAY_UNSPECIFIED = 0;
-
-  // SU.
-  WEEKDAY_SUNDAY = 1;
-
-  // MO.
-  WEEKDAY_MONDAY = 2;
-
-  // TU.
-  WEEKDAY_TUESDAY = 3;
-
-  // WE.
-  WEEKDAY_WEDNESDAY = 4;
-
-  // TH.
-  WEEKDAY_THURSDAY = 5;
-
-  // FR.
-  WEEKDAY_FRIDAY = 6;
-
-  // SA.
-  WEEKDAY_SATURDAY = 7;
 }

@@ -8,6 +8,8 @@ package protobuf.rfc5545.event.v1;
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "google/type/dayofweek.proto";
+import "google/type/month.proto";
 import "protobuf/rfc5545/event/v1/recurrence_parts.proto";
 
 option java_multiple_files = true;
@@ -123,12 +125,13 @@ message Recurrence {
     }
   ];
 
-  // BYMONTH, values 1-12.
-  repeated int32 months = 12 [
+  // BYMONTH. Typed rather than an int in 1-12, so the range is enforced by
+  // the type instead of by a constraint that has to be kept in step with it.
+  repeated google.type.Month months = 12 [
     (google.api.field_behavior) = OPTIONAL,
-    (buf.validate.field).repeated.items.int32 = {
-      gte: 1
-      lte: 12
+    (buf.validate.field).repeated.items.enum = {
+      defined_only: true
+      not_in: [0]
     }
   ];
 
@@ -145,7 +148,7 @@ message Recurrence {
 
   // WKST. Which day starts the week, affecting how BYWEEKNO and a WEEKLY
   // INTERVAL are counted. Defaults to Monday per section 3.3.10 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10>.
-  Weekday week_start = 14 [
+  google.type.DayOfWeek week_start = 14 [
     (google.api.field_behavior) = OPTIONAL,
     (buf.validate.field).enum.defined_only = true
   ];

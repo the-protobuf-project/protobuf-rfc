@@ -8,6 +8,7 @@ package protobuf.shared.interchange.v1;
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/timestamp.proto";
+import "google/rpc/status.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "MessagesProto";
@@ -145,9 +146,17 @@ message ImportResourcesMetadata {
 
 // One entry that failed to parse or validate.
 message ImportFailure {
-  // Zero-based index of the entry within the payload.
+  // Zero-based index of the entry within the payload. Kept alongside the
+  // status because google.rpc.Status has nowhere to say *which* entry failed,
+  // and "the ninth vCard" is the only way a caller can find it.
   int32 index = 1;
 
-  // Why the entry was rejected.
-  string description = 2;
+  // Why it was rejected.
+  //
+  // google.rpc.Status rather than a bare string: it carries a google.rpc.Code
+  // the caller can branch on, and `details` can hold a
+  // google.rpc.BadRequest whose FieldViolation names the offending field and
+  // the constraint it broke. A buf.validate failure maps onto that exactly,
+  // where a free-text description would throw the structure away.
+  google.rpc.Status status = 2;
 }
