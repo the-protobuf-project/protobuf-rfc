@@ -26,7 +26,14 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc4519.group.v1";
 //
 // A consequence: 'member' is mandatory in the RFC and absent here, so a Group
 // with no Membership is representable in this API and is not a valid
-// groupOfNames entry. Exporters must reject or synthesise on the way out.
+// groupOfNames entry.
+//
+// The rule for an exporter: refuse, not synthesise. Section 3.5 gives no
+// value that could stand in for an absent member -- inventing one (the
+// group's own DN, an owner, a sentinel) asserts a membership nothing in this
+// model states, which misleads every LDAP consumer of the export more than
+// an explicit error would. An exporter targeting LDAP MUST reject a Group
+// with zero Memberships rather than emit an invalid or fabricated entry.
 //
 // Reference: RFC 4519 "LDAP: Schema for User Applications", section 3.5.
 // https://www.rfc-editor.org/rfc/rfc4519.html#section-3.5

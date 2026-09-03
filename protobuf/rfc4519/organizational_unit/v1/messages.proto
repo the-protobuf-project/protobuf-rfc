@@ -1,0 +1,101 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc4519.organizational_unit.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "protobuf/rfc4519/organizational_unit/v1/organizational_unit.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc4519.organizational_unit.v1";
+
+// Request message for OrganizationalUnits.GetOrganizationalUnit, AIP-131 <https://aip.dev/131>.
+message GetOrganizationalUnitRequest {
+  // Name of the organizational unit to retrieve, "organizationalUnits/{organizationalUnit}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/OrganizationalUnit",
+    (buf.validate.field).string.pattern = "^organizationalUnits/[^/]+$"
+  ];
+}
+
+// Request message for OrganizationalUnits.ListOrganizationalUnits, AIP-132 <https://aip.dev/132>.
+message ListOrganizationalUnitsRequest {
+  // Maximum organizational units to return. Defaults to 50, capped at 1000.
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ListOrganizationalUnitsResponse.next_page_token.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160 <https://aip.dev/160>.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include soft-deleted organizational units in the result. AIP-164 <https://aip.dev/164>.
+  bool show_deleted = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for OrganizationalUnits.ListOrganizationalUnits, AIP-132 <https://aip.dev/132>.
+message ListOrganizationalUnitsResponse {
+  // The organizational units on this page.
+  repeated OrganizationalUnit organizational_units = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+}
+
+// Request message for OrganizationalUnits.CreateOrganizationalUnit, AIP-133 <https://aip.dev/133>.
+message CreateOrganizationalUnitRequest {
+  // The organizational unit to create.
+  OrganizationalUnit organizational_unit = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Client-assigned id, becoming the last segment of the resource name. The
+  // server generates one when empty.
+  string organizational_unit_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for OrganizationalUnits.UpdateOrganizationalUnit, AIP-134 <https://aip.dev/134>.
+message UpdateOrganizationalUnitRequest {
+  // The organizational unit to update. Its name field identifies the resource.
+  OrganizationalUnit organizational_unit = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Fields to update. An empty mask updates all mutable fields.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for OrganizationalUnits.DeleteOrganizationalUnit, AIP-135 <https://aip.dev/135>.
+message DeleteOrganizationalUnitRequest {
+  // Name of the organizational unit to delete, "organizationalUnits/{organizationalUnit}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/OrganizationalUnit",
+    (buf.validate.field).string.pattern = "^organizationalUnits/[^/]+$"
+  ];
+}
+
+// Request message for OrganizationalUnits.UndeleteOrganizationalUnit, AIP-164 <https://aip.dev/164>.
+message UndeleteOrganizationalUnitRequest {
+  // Name of the soft-deleted organizational unit to restore.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/OrganizationalUnit",
+    (buf.validate.field).string.pattern = "^organizationalUnits/[^/]+$"
+  ];
+}
