@@ -60,4 +60,9 @@ message Contact {
 
   // NOTE, section 6.7.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.7.2>.
   repeated string notes = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // Properties this schema does not model, section 6.10 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.10>.
+  // Preserved verbatim so an imported vCard survives a round trip; see
+  // ExtensionProperty for why this is the RFC's mechanism, not a hole.
+  repeated ExtensionProperty extensions = 10 [(google.api.field_behavior) = OPTIONAL];
 }

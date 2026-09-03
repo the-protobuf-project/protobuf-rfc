@@ -5,6 +5,9 @@ syntax = "proto3";
 
 package protobuf.rfc5545.journal.v1;
 
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
 option java_multiple_files = true;
 option java_outer_classname = "TypesProto";
 option java_package = "io.github.theprotobufproject.protobuf.rfc5545.journal.v1";
@@ -16,6 +19,39 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc5545.journal.v1"
 // lifecycle. An author sets this one by publishing. VEVENT and VTODO define
 // different value sets for the same property, so each has its own enum.
 //
+// ExtensionProperty carries an iCalendar property this schema does not model.
+//
+// Not a hole punched in a typed schema: RFC 5545 section 3.8.8.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.1> reserves
+// IANA-registered properties and section 3.8.8.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.2> non-standard X- properties,
+// and requires that applications ignore what they do not recognise rather than
+// reject it. A calendar that round-trips without them is lossy by
+// construction.
+//
+// It is also what keeps the modelled properties honest. Anything the schema
+// has not earned a typed field for survives here instead of forcing a
+// speculative field table, and a property graduates out of this message when a
+// consumer needs to query it.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.8.2.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.2
+message ExtensionProperty {
+  // The property name: an IANA-registered token or an X- name, e.g.
+  // "X-WR-CALNAME". Not called `name`, which would make api-linter treat this
+  // message as a resource.
+  string key = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The property's values, one entry per comma-separated component. The
+  // schema cannot know the structure of a property it does not model, so
+  // these stay unparsed.
+  repeated string values = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Property parameters, section 3.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2>, e.g. {"TZID": "Europe/London"}.
+  map<string, string> parameters = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
 // Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.1.11.
 // https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.11
 enum Publication {

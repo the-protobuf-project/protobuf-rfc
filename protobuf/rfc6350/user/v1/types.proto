@@ -107,6 +107,44 @@ message Organization {
 
 // Kind is the KIND property, RFC 6350 section 6.1.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.1.4>.
 //
+// ExtensionProperty carries a vCard property this schema does not model.
+//
+// Not a hole punched in a typed schema: RFC 6350 section 6.10 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.10> defines
+// exactly this, and section 3.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-3.3> types a property name as `iana-token / x-name`.
+// Properties "with a name starting with X- may be defined bilaterally between
+// two cooperating agents without outside registration", so a vCard that
+// round-trips without them is lossy by construction.
+//
+// It is also what keeps the nine modelled properties honest. Anything the
+// schema has not earned a typed field for survives here instead of forcing a
+// speculative field table, and a property graduates out of this message when a
+// consumer needs to query it.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.10.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.10
+message ExtensionProperty {
+  // The property name: an IANA-registered token or an X- name, e.g.
+  // "X-ABLabel" or "GEO". Not called `name`, which would make api-linter
+  // treat this message as a resource.
+  string key = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The property's values, one entry per comma-separated component. The
+  // schema cannot know the structure of a property it does not model, so
+  // these stay unparsed.
+  repeated string values = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Property parameters, section 5 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5>, e.g. {"TYPE": "work"}. Names are
+  // case-insensitive; values may not be.
+  map<string, string> parameters = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Property group, section 3.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-3.3>. vCard allows `group.PROPERTY` to tie
+  // related lines together, which Apple's exporters rely on heavily.
+  string group = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
 // Reference: RFC 6350 "vCard Format Specification", section 6.1.4.
 // https://www.rfc-editor.org/rfc/rfc6350.html#section-6.1.4
 enum Kind {

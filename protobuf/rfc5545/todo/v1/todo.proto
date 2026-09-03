@@ -141,4 +141,8 @@ message Todo {
 
   // When the todo was last modified.
   google.protobuf.Timestamp update_time = 19 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Properties this schema does not model, section 3.8.8.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.2>.
+  // Preserved verbatim so an imported .ics survives a round trip.
+  repeated ExtensionProperty extensions = 20 [(google.api.field_behavior) = OPTIONAL];
 }

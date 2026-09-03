@@ -164,4 +164,8 @@ message Event {
 
   // When a soft-deleted event is purged for good. AIP-164 <https://aip.dev/164>.
   google.protobuf.Timestamp expire_time = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Properties this schema does not model, section 3.8.8.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.2>.
+  // Preserved verbatim so an imported .ics survives a round trip.
+  repeated ExtensionProperty extensions = 25 [(google.api.field_behavior) = OPTIONAL];
 }
