@@ -46,6 +46,23 @@ jobs:
           output-format: github
           fail-on-error: true
 
+      # Apache-2.0 requires no per-file notice, but a file that quietly
+      # loses one is how a repository ends up ambiguously licensed.
+      - name: Check License Headers
+        run: |
+          missing=0
+          while IFS= read -r file; do
+            if ! head -3 "$file" | grep -q 'SPDX-License-Identifier: Apache-2.0'; then
+              echo "::error file=$file::missing SPDX-License-Identifier header"
+              missing=1
+            fi
+          done < <(find protobuf -name '*.proto')
+          if [ "$missing" -ne 0 ]; then
+            echo "Add the two-line Apache-2.0 header above 'syntax'."
+            exit 1
+          fi
+          echo "All protos carry an SPDX header."
+
       # CLAUDE.md rule 2. A file over the cap gets split, never compressed.
       - name: Check File Length Cap
         run: |

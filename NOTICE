@@ -1,0 +1,20 @@
+protobuf-rfc
+Copyright 2026 The Protobuf Project authors.
+
+Licensed under the Apache License, Version 2.0. See the LICENSE file.
+
+---
+
+The .proto files in this repository model data structures specified by IETF
+RFCs -- principally RFC 6350 (vCard), RFC 5545 (iCalendar) and RFC 4519
+(LDAP schema). Section numbers, property names and short descriptive phrases
+are cited from those documents for identification and documentation.
+
+The RFCs themselves are published by the IETF and are subject to the IETF
+Trust's Legal Provisions Relating to IETF Documents (BCP 78):
+
+    https://trustee.ietf.org/license-info
+
+Citing them here neither extends this project's Apache-2.0 licence to the RFC
+texts nor claims any right in them. The protobuf definitions, their comments
+and the surrounding tooling are original work licensed as above.

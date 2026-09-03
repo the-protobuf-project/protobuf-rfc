@@ -122,3 +122,22 @@ buf generate --template buf.gen.ts.yaml --include-imports # TypeScript
 Plus `api-linter` and the 200-line file cap, both of which CI enforces —
 see `.github/workflows/ci.yml`. There are no helper scripts: the workflow is
 the single definition of every gate. No lint rule may be disabled.
+
+## License
+
+Apache License 2.0 — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
+
+Every `.proto` carries an SPDX header, and CI rejects one that does not:
+
+```proto
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+```
+
+protoc-gen-go copies that header into the generated `.pb.go`, so the notice
+travels with the Go SDK.
+
+The schemas model structures specified by IETF RFCs. Those documents are the
+IETF's and are covered by BCP 78; `NOTICE` records the distinction between
+them and the original work here.
+
