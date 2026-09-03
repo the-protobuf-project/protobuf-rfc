@@ -8,6 +8,7 @@ package protobuf.rfc6350.user.v1;
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "protobuf/rfc6350/user/v1/contact_method.proto";
+import "protobuf/rfc6350/user/v1/date_or_text.proto";
 import "protobuf/rfc6350/user/v1/types.proto";
 
 option java_multiple_files = true;
@@ -65,4 +66,10 @@ message Contact {
   // Preserved verbatim so an imported vCard survives a round trip; see
   // ExtensionProperty for why this is the RFC's mechanism, not a hole.
   repeated ExtensionProperty extensions = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // BDAY, section 6.2.5 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.5>. Cardinality *1.
+  DateOrText birthday = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // ANNIVERSARY, section 6.2.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.6>. Cardinality *1.
+  DateOrText anniversary = 12 [(google.api.field_behavior) = OPTIONAL];
 }

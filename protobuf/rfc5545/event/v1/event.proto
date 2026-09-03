@@ -11,6 +11,7 @@ import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
+import "google/type/latlng.proto";
 import "protobuf/rfc5545/event/v1/alarm.proto";
 import "protobuf/rfc5545/event/v1/participant.proto";
 import "protobuf/rfc5545/event/v1/recurrence.proto";
@@ -163,4 +164,14 @@ message Event {
   // Properties this schema does not model, section 3.8.8.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.2>.
   // Preserved verbatim so an imported .ics survives a round trip.
   repeated ExtensionProperty extensions = 25 [(google.api.field_behavior) = OPTIONAL];
+
+  // GEO, section 3.8.1.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.6>. Where the event happens, as latitude and
+  // longitude.
+  //
+  // google.type.LatLng, because section 3.8.1.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.6> is a semicolon-separated
+  // float pair and that is exactly what LatLng holds. Note this does not
+  // generalise to vCard: RFC 6350 section 6.5.2 types GEO as a single URI --
+  // usually a geo: URI per RFC 5870, but explicitly not necessarily -- so
+  // typing that one as coordinates would reject conforming values.
+  google.type.LatLng position = 26 [(google.api.field_behavior) = OPTIONAL];
 }
