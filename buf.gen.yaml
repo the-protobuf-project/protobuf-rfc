@@ -1,5 +1,6 @@
-# Code generation for Go, Java and Python. TypeScript is in buf.gen.ts.yaml,
-# which needs --include-imports.
+# Code generation for Go and Java, whose dependencies resolve through
+# published artifacts. TypeScript and Python each need --include-imports and
+# have their own template: buf.gen.ts.yaml and buf.gen.python.yaml.
 #
 # CI generates every target and compiles it -- see the GenerateAndBuild job.
 # Nothing is committed; `gen/` is gitignored.
@@ -36,8 +37,3 @@ plugins:
 
   - remote: buf.build/protocolbuffers/java
     out: gen/java
-
-  - remote: buf.build/protocolbuffers/python
-    out: gen/python
-  - remote: buf.build/protocolbuffers/pyi
-    out: gen/python

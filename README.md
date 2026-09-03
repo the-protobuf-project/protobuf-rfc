@@ -49,16 +49,20 @@ a different root.
 ### Generating locally
 
 ```sh
-buf generate                                              # Go, Java, Python
-buf generate --template buf.gen.ts.yaml --include-imports # TypeScript
+buf generate                                                  # Go, Java
+buf generate --template buf.gen.ts.yaml --include-imports     # TypeScript
+buf generate --template buf.gen.python.yaml --include-imports # Python
 ```
 
-TypeScript is generated separately because protoc-gen-es emits relative
-imports for every dependency, so its output has to be self-contained. The
-other three resolve dependencies through published runtime packages.
+Go and Java resolve their dependencies through published artifacts, so the
+default template suffices. TypeScript and Python each need
+`--include-imports`: protoc-gen-es emits relative imports for every
+dependency, and the generated Python does `from buf.validate import
+validate_pb2`, which no PyPI package exposes — protovalidate vendors that
+module privately under `protovalidate/_gen`.
 
-CI then compiles each SDK — build only, nothing is run, packaged or
-published. It exists to prove the schema produces code a consumer can
+CI then compiles each SDK on Go 1.26, TypeScript 7, Python 3.14 and Java 25 —
+build only, nothing is run, packaged or published. It exists to prove the schema produces code a consumer can
 actually compile, which `buf lint` cannot tell you. The per-language
 scaffolding CI copies in is in `sandbox/`, so you can reproduce any of it by
 hand:

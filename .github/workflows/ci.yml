@@ -128,36 +128,39 @@ jobs:
         if: matrix.language == 'Go'
         uses: actions/setup-go@v5
         with:
-          go-version: stable
+          go-version: "1.26"
 
       - name: Setup Node
         if: matrix.language == 'TypeScript'
         uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Setup Python
         if: matrix.language == 'Python'
         uses: actions/setup-python@v5
         with:
-          python-version: "3.12"
+          python-version: "3.14"
 
       - name: Setup Java
         if: matrix.language == 'Java'
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "17"
+          java-version: "25"
           cache: maven
 
-      # TypeScript is generated from its own template because protoc-gen-es
-      # emits relative imports for every dependency, so its output must be
-      # self-contained. Go, Java and Python resolve dependencies through
-      # published runtime packages instead.
+      # Three templates. Go and Java resolve dependencies through published
+      # artifacts, so the default template suffices. TypeScript and Python
+      # each need --include-imports: protoc-gen-es emits relative imports for
+      # every dependency, and the generated Python does
+      # `from buf.validate import validate_pb2`, which no PyPI package
+      # exposes.
       - name: Generate
         run: |
           buf generate
           buf generate --template buf.gen.ts.yaml --include-imports
+          buf generate --template buf.gen.python.yaml --include-imports
 
       # Compile only. Nothing is run, packaged or published: the point is to
       # prove the schema produces code a consumer can build, which buf lint
@@ -183,12 +186,16 @@ jobs:
         run: |
           pip install --quiet -r sandbox/python/requirements.txt
           cd gen/python
-          # Make the generated tree a regular package. Without __init__.py it
-          # is only a namespace portion, and Python's import scan lets a
-          # regular package named `protobuf` further down sys.path win over a
-          # namespace portion at the front -- which is why importing
-          # protobuf.rfc4519 failed while protobuf itself resolved.
-          find protobuf -type d -exec touch {}/__init__.py \;
+          # google.api, google.longrunning and google.rpc come from
+          # googleapis-common-protos. Keeping the generated copies would make
+          # `google` a regular package at sys.path[0], shadowing the installed
+          # one and hiding google.protobuf with it.
+          rm -rf google
+          # Make the remaining trees regular packages so they win the import
+          # scan at sys.path[0]. Without __init__.py they are only namespace
+          # portions, and a regular package named `protobuf` further down
+          # sys.path beats a namespace portion at the front.
+          find protobuf buf -type d -exec touch {}/__init__.py \;
           # Importing every module exercises the descriptor pool, which is
           # where a bad schema actually fails. Compiling the files would not.
           python - <<'PY'

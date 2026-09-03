@@ -1,0 +1,11 @@
+# Python is generated separately, with --include-imports, because the
+# generated modules do `from buf.validate import validate_pb2` and no PyPI
+# package exposes that path -- protovalidate vendors it privately under
+# protovalidate/_gen. Go and Java resolve the same dependency through
+# published artifacts, so they use buf.gen.yaml.
+version: v2
+plugins:
+  - remote: buf.build/protocolbuffers/python
+    out: gen/python
+  - remote: buf.build/protocolbuffers/pyi
+    out: gen/python

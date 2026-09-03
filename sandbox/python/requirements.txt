@@ -1,6 +1,12 @@
-# Runtime packages the generated Python needs. buf/validate comes from
-# protovalidate; google/api and google/longrunning from
-# googleapis-common-protos.
+# Runtime packages the generated Python needs.
+#
+# buf/validate is NOT here: the protovalidate wheel vendors it privately at
+# protovalidate/_gen/buf/validate, so `from buf.validate import validate_pb2`
+# cannot resolve from it. That module is generated instead, via
+# buf.gen.python.yaml with --include-imports.
+#
+# google.api, google.longrunning and google.rpc come from
+# googleapis-common-protos; the generated copies are deleted so they cannot
+# shadow the installed `google` package and hide google.protobuf with it.
 protobuf
 googleapis-common-protos
-protovalidate
