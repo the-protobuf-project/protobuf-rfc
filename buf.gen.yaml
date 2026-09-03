@@ -1,7 +1,7 @@
 # Code generation for Go, Java and Python. TypeScript is in buf.gen.ts.yaml,
 # which needs --include-imports.
 #
-# CI generates every target and compiles it -- see scripts/sandbox-build.sh.
+# CI generates every target and compiles it -- see the GenerateAndBuild job.
 # Nothing is committed; `gen/` is gitignored.
 #
 # No .proto file carries a `go_package`, because the right value depends on

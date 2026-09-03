@@ -22,7 +22,8 @@ jobs:
           setup_only: true
 
       # Formatting is a gate, not a convenience: without it whichever editor
-      # last opened a file decides how it wraps.
+      # last opened a file decides how it wraps, and patches break underneath
+      # whoever edits next.
       - name: Check Formatting
         run: buf format --diff --exit-code
 
@@ -45,15 +46,28 @@ jobs:
           output-format: github
           fail-on-error: true
 
-      # Shared with scripts/lint.sh so local and CI enforce the same cap.
+      # CLAUDE.md rule 2. A file over the cap gets split, never compressed.
       - name: Check File Length Cap
-        run: ./scripts/check-line-cap.sh
+        run: |
+          over=0
+          while IFS= read -r file; do
+            lines=$(wc -l <"$file")
+            if [ "$lines" -gt 200 ]; then
+              echo "::error file=$file::$lines lines, over the 200-line cap"
+              over=1
+            fi
+          done < <(find . -path ./gen -prune -o \( -name '*.proto' -o -name '*.md' \) -print)
+          if [ "$over" -ne 0 ]; then
+            echo "Split the files above; do not compress them."
+            exit 1
+          fi
+          echo "All files within the 200-line cap."
 
   BreakingChange:
     name: Breaking Change
     # Pull requests only. On a push to main there is nothing meaningful to
-    # compare against: the BSR module may not exist yet, and comparing main
-    # to itself is vacuous.
+    # compare against: the BSR module may not exist yet, and comparing main to
+    # itself is vacuous.
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     steps:
@@ -67,12 +81,11 @@ jobs:
         with:
           setup_only: true
 
-      # Against the local checkout, not an https URL. Cloning the remote needs
-      # credentials the job does not have on a private repository, which is
-      # what broke this step before.
+      # Against the local checkout by commit SHA. Cloning the remote over
+      # https needs credentials the job does not have on a private repository,
+      # and a SHA resolves where a branch name may never have been fetched.
       - name: Compare Against Base Commit
-        run: |
-          buf breaking --against ".git#ref=${{ github.event.pull_request.base.sha }}"
+        run: buf breaking --against ".git#ref=${{ github.event.pull_request.base.sha }}"
 
   GenerateAndBuild:
     name: Generate And Build (${{ matrix.language }})
@@ -82,13 +95,9 @@ jobs:
       matrix:
         include:
           - language: Go
-            target: go
           - language: TypeScript
-            target: typescript
           - language: Python
-            target: python
           - language: Java
-            target: java
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -124,11 +133,59 @@ jobs:
           java-version: "17"
           cache: maven
 
-      # Generates the SDK and compiles it. Compile only -- nothing is run,
-      # packaged or published. `buf lint` cannot tell you whether the schema
-      # produces code a consumer can actually build; this can.
-      - name: Sandbox Build
-        run: ./scripts/sandbox-build.sh ${{ matrix.target }}
+      # TypeScript is generated from its own template because protoc-gen-es
+      # emits relative imports for every dependency, so its output must be
+      # self-contained. Go, Java and Python resolve dependencies through
+      # published runtime packages instead.
+      - name: Generate
+        run: |
+          buf generate
+          buf generate --template buf.gen.ts.yaml --include-imports
+
+      # Compile only. Nothing is run, packaged or published: the point is to
+      # prove the schema produces code a consumer can build, which buf lint
+      # cannot tell you.
+      - name: Build Go
+        if: matrix.language == 'Go'
+        run: |
+          cp sandbox/go/go.mod gen/go/go.mod
+          cd gen/go
+          GOFLAGS=-mod=mod go mod tidy
+          go build ./...
+
+      - name: Build TypeScript
+        if: matrix.language == 'TypeScript'
+        run: |
+          cp sandbox/ts/package.json sandbox/ts/tsconfig.json gen/ts/
+          cd gen/ts
+          npm install --no-fund --no-audit
+          npx tsc --noEmit
+
+      - name: Build Python
+        if: matrix.language == 'Python'
+        run: |
+          pip install --quiet -r sandbox/python/requirements.txt
+          cd gen/python
+          # Importing every module exercises the descriptor pool, which is
+          # where a bad schema actually fails. Compiling the files would not.
+          python - <<'PY'
+          import importlib, pathlib, sys
+          sys.path.insert(0, ".")
+          mods = sorted(
+              p.with_suffix("").as_posix().replace("/", ".")
+              for p in pathlib.Path("protobuf").rglob("*_pb2.py")
+          )
+          for m in mods:
+              importlib.import_module(m)
+          print(f"Imported {len(mods)} generated modules.")
+          PY
+
+      - name: Build Java
+        if: matrix.language == 'Java'
+        run: |
+          cp sandbox/java/pom.xml gen/java/pom.xml
+          cd gen/java
+          mvn --quiet --batch-mode compile
 
   PublishModule:
     name: Publish Module
@@ -151,7 +208,7 @@ jobs:
         with:
           token: ${{ secrets.BUF_TOKEN }}
           push: true
-          # No push_create_visibility: the module is created by hand in the
-          # BSR with the intended visibility. Letting CI create it would make
-          # that choice silently on the first green build.
+          # The module is created by hand in the BSR with the intended
+          # visibility. Letting CI create it would make that choice silently
+          # on the first green build.
           push_disable_create: true

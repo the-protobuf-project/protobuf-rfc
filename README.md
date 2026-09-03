@@ -57,15 +57,15 @@ TypeScript is generated separately because protoc-gen-es emits relative
 imports for every dependency, so its output has to be self-contained. The
 other three resolve dependencies through published runtime packages.
 
-To generate *and compile*, which is what CI does:
+CI then compiles each SDK — build only, nothing is run, packaged or
+published. It exists to prove the schema produces code a consumer can
+actually compile, which `buf lint` cannot tell you. The per-language
+scaffolding CI copies in is in `sandbox/`, so you can reproduce any of it by
+hand:
 
 ```sh
-./scripts/sandbox-build.sh all        # or: go | typescript | python | java
+cp sandbox/go/go.mod gen/go/ && (cd gen/go && go mod tidy && go build ./...)
 ```
-
-Build only — nothing is run, packaged or published. It exists to prove the
-schema produces code a consumer can actually compile, which `buf lint` cannot
-tell you. The per-language scaffolding is in `sandbox/`.
 
 ## What is in it
 
@@ -109,11 +109,16 @@ idempotency and error codes.
 `CLAUDE.md` and `docs/conventions.md` hold the working rules — thirteen of
 them, all hard. `PLAN.md` indexes the roadmap in `plan/`.
 
-Before opening a PR:
+Before opening a PR, run what CI runs:
 
 ```sh
-./scripts/lint.sh
+buf format --diff --exit-code   # formatting is a gate, not a convenience
+buf lint
+buf build
+buf generate                                              # Go, Java, Python
+buf generate --template buf.gen.ts.yaml --include-imports # TypeScript
 ```
 
-That runs `buf format`, `buf lint`, `buf build`, `api-linter` and the
-200-line file cap. All five must pass; no lint rule may be disabled.
+Plus `api-linter` and the 200-line file cap, both of which CI enforces —
+see `.github/workflows/ci.yml`. There are no helper scripts: the workflow is
+the single definition of every gate. No lint rule may be disabled.
