@@ -7,6 +7,8 @@ package protobuf.rfc5545.journal.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
+import "google/type/date.proto";
+import "google/type/datetime.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "TypesProto";
@@ -32,6 +34,40 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc5545.journal.v1"
 // speculative field table, and a property graduates out of this message when a
 // consumer needs to query it.
 //
+// CalendarTime is an iCalendar DATE or DATE-TIME value, RFC 5545
+// sections 3.3.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.4> and 3.3.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5>.
+//
+// google.protobuf.Timestamp cannot express what iCalendar needs. Section
+// 3.3.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5> gives DATE-TIME three forms and a Timestamp holds only one:
+//
+//   form #1, floating    local time, no zone -- "09:00 wherever you are"
+//   form #2, UTC         an absolute instant
+//   form #3, with TZID   local time plus a zone reference
+//
+// The difference is not academic. A recurring 09:00 standup is floating time:
+// it stays at 09:00 across a DST boundary, where an absolute instant shifts
+// by an hour. Section 3.3.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.4> adds a fourth case, the all-day DATE, which a
+// Timestamp can only approximate by picking a midnight in some zone.
+//
+// google.type.DateTime carries all three date-time forms: omit its
+// time_offset for floating, set utc_offset for absolute, set time_zone for a
+// zone reference. It is a google.* type, so AIP-215 <https://aip.dev/215> permits referencing
+// it across packages -- which is the only reason this value object can be
+// built from shared parts rather than hand-rolled.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.3.5.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5
+message CalendarTime {
+  // Exactly one form. Neither set is not a valid iCalendar time.
+  oneof value {
+    // DATE, section 3.3.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.4>. An all-day value: no time, no zone.
+    google.type.Date date = 1;
+
+    // DATE-TIME, section 3.3.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5>.
+    google.type.DateTime date_time = 2;
+  }
+}
+
 // Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.8.2.
 // https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.2
 message ExtensionProperty {

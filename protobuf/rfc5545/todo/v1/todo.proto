@@ -78,22 +78,22 @@ message Todo {
 
   // DTSTART, section 3.8.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.4>. When work may begin. Optional on a todo,
   // unlike an event, where it is what the event *is*.
-  google.protobuf.Timestamp start_time = 7 [(google.api.field_behavior) = OPTIONAL];
+  CalendarTime start = 7 [(google.api.field_behavior) = OPTIONAL];
 
   // Section 3.6.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.2> permits DUE or DURATION but not both, and DURATION is
   // meaningless without DTSTART. The oneof enforces the first constraint;
-  // the second is left to the server, which knows whether start_time is set.
+  // the second is left to the server, which knows whether `start` is set.
   oneof deadline {
     // DUE, section 3.8.2.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.3>. When it must be finished.
-    google.protobuf.Timestamp due_time = 8;
+    CalendarTime due = 8;
 
     // DURATION, section 3.8.2.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.5>. How long it should take, measured from
-    // start_time.
+    // `start`.
     google.protobuf.Duration duration = 9;
   }
 
   // COMPLETED, section 3.8.2.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.1>. When it was actually finished.
-  google.protobuf.Timestamp completed_time = 10 [(google.api.field_behavior) = OPTIONAL];
+  CalendarTime completed = 10 [(google.api.field_behavior) = OPTIONAL];
 
   // PERCENT-COMPLETE, section 3.8.1.8 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.8>. 0 to 100.
   int32 percent_complete = 11 [

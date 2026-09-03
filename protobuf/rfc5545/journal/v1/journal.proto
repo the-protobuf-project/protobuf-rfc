@@ -61,7 +61,10 @@ message Journal {
 
   // DTSTART, section 3.8.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.4>. The date the entry is filed under. Often a
   // date rather than a date-time, since a journal entry is about a day.
-  google.protobuf.Timestamp start_time = 4 [(google.api.field_behavior) = REQUIRED];
+  CalendarTime start = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // SUMMARY, section 3.8.1.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.12>. The short title.
   string summary = 5 [(google.api.field_behavior) = OPTIONAL];

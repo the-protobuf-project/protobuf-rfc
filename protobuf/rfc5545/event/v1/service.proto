@@ -141,10 +141,12 @@ service Events {
   // A custom method (AIP-136) because expansion cannot be generalised across
   // resource types the way export can -- only a recurrence rule expands.
   //
-  // The window is required at both ends, deliberately. A rule bounded by
-  // neither UNTIL nor COUNT generates infinitely many instances, so there is
-  // no safe default and a missing bound is a caller bug worth reporting
-  // rather than one the server guesses around.
+  // The window is a google.type.Interval and is required at both ends,
+  // deliberately. A rule bounded by neither UNTIL nor COUNT generates
+  // infinitely many instances, so there is no safe default and a missing
+  // bound is a caller bug worth reporting rather than one the server guesses
+  // around. The interval is half-open: instances at `start_time` are
+  // included, instances at `end_time` are not.
   //
   // Returns materialised instances with EXDATE exclusions removed and RDATE
   // additions folded in. None is a stored resource, so none carries a
@@ -154,7 +156,7 @@ service Events {
   // Paginated like List, with its own `page_size` default of 250.
   //
   //   NOT_FOUND          no such event
-  //   INVALID_ARGUMENT   window_end_time is not after window_start_time
+  //   INVALID_ARGUMENT   window.end_time is not after window.start_time
   //   FAILED_PRECONDITION  the event has no recurrence rule
   //   PERMISSION_DENIED  caller may not read it
   rpc ExpandEvent(ExpandEventRequest) returns (ExpandEventResponse) {

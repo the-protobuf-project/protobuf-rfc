@@ -7,10 +7,10 @@ package protobuf.rfc5545.event.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
-import "google/protobuf/timestamp.proto";
 import "google/type/dayofweek.proto";
 import "google/type/month.proto";
 import "protobuf/rfc5545/event/v1/recurrence_parts.proto";
+import "protobuf/rfc5545/event/v1/types.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "RecurrenceProto";
@@ -55,7 +55,12 @@ message Recurrence {
   // neither repeats forever.
   oneof bound {
     // UNTIL. The last instant an instance may start.
-    google.protobuf.Timestamp until_time = 2;
+    //
+    // Section 3.3.10 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10> requires this to have the same value type as the
+    // component's DTSTART, and a DATE-TIME here MUST be in UTC form -- so set
+    // date when DTSTART is a date, and date_time with utc_offset zero
+    // otherwise.
+    CalendarTime until = 2;
 
     // COUNT. How many instances the rule generates.
     int32 count = 3 [(buf.validate.field).int32.gt = 0];

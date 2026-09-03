@@ -35,14 +35,6 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
 // Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.6.1.
 // https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.1
 message Event {
-  option (buf.validate.message).cel = {
-    id: "event.end_after_start"
-    message: "DTEND must be later than DTSTART (RFC 5545 section 3.6.1)"
-    expression:
-      "!has(this.end_time) || !has(this.start_time) || "
-      "this.end_time > this.start_time"
-  };
-
   option (google.api.resource) = {
     type: "protobufrfc.dev/Event"
     pattern: "calendars/{calendar}/events/{event}"
@@ -85,9 +77,12 @@ message Event {
   // LOCATION, section 3.8.1.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.7>.
   string location = 6 [(google.api.field_behavior) = OPTIONAL];
 
-  // DTSTART, section 3.8.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.4>. For a recurring event this is the first
-  // instance, and the recurrence rule is evaluated relative to it.
-  google.protobuf.Timestamp start_time = 7 [(google.api.field_behavior) = REQUIRED];
+  // DTSTART, section 3.8.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.4>. For a recurring event this is the
+  // first instance, and the recurrence rule is evaluated relative to it.
+  CalendarTime start = 7 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
 
   // Section 3.6.1 permits DTEND or DURATION but not both. The oneof enforces
   // that rather than leaving it to a validator; an event with neither lasts
@@ -95,7 +90,7 @@ message Event {
   oneof ends {
     // DTEND, section 3.8.2.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.2>. Exclusive: an event ending at 10:00 does not
     // occupy 10:00.
-    google.protobuf.Timestamp end_time = 8;
+    CalendarTime end = 8;
 
     // DURATION, section 3.8.2.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.5>.
     google.protobuf.Duration duration = 9;
@@ -124,10 +119,10 @@ message Event {
 
   // EXDATE, section 3.8.5.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.5.1>. Instances the rule would generate but that do
   // not occur -- a cancelled week in an otherwise weekly series.
-  repeated google.protobuf.Timestamp excluded_times = 14 [(google.api.field_behavior) = OPTIONAL];
+  repeated CalendarTime excluded_times = 14 [(google.api.field_behavior) = OPTIONAL];
 
   // RDATE, section 3.8.5.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.5.2>. Extra instances outside the rule.
-  repeated google.protobuf.Timestamp additional_times = 15 [(google.api.field_behavior) = OPTIONAL];
+  repeated CalendarTime additional_times = 15 [(google.api.field_behavior) = OPTIONAL];
 
   // SEQUENCE, section 3.8.7.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.7.4>. Incremented by the organiser on each
   // significant revision, so an attendee can tell a stale invitation from a

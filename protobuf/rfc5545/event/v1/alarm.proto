@@ -68,6 +68,11 @@ message Alarm {
     google.protobuf.Duration trigger_offset = 2;
 
     // An absolute instant, independent of the component's own times.
+    //
+    // A Timestamp, not the CalendarTime the other calendar fields use, and
+    // deliberately so: section 3.8.6.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.3> requires an absolute TRIGGER to be a
+    // UTC-formatted DATE-TIME. Floating and zone-referenced forms are invalid
+    // here, so the narrower type is the accurate one.
     google.protobuf.Timestamp trigger_time = 3;
   }
 

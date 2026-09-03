@@ -9,7 +9,7 @@ import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
-import "google/protobuf/timestamp.proto";
+import "google/type/interval.proto";
 import "protobuf/rfc5545/event/v1/event.proto";
 
 option java_multiple_files = true;
@@ -120,24 +120,24 @@ message ExpandEventRequest {
     (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
   ];
 
-  // Earliest instance start to return, inclusive.
-  google.protobuf.Timestamp window_start_time = 2 [
-    (google.api.field_behavior) = REQUIRED,
-    (buf.validate.field).required = true
-  ];
-
-  // Latest instance start to return, exclusive.
+  // The time window to expand over: instances starting at or after
+  // `start_time` and strictly before `end_time`.
   //
-  // Required, not optional. An unbounded rule has infinitely many instances,
-  // so there is no sensible default and a missing bound is a bug the caller
-  // should be told about rather than one the server guesses around.
-  google.protobuf.Timestamp window_end_time = 3 [
+  // google.type.Interval rather than two loose timestamps. It documents the
+  // half-open convention upstream instead of in a comment here, and it makes
+  // "both bounds or neither" a property of the type rather than a CEL rule
+  // that has to be written and can silently be wrong.
+  //
+  // Required, and both bounds with it. An unbounded rule has infinitely many
+  // instances, so there is no sensible default and a missing bound is a
+  // caller bug worth reporting rather than one the server guesses around.
+  google.type.Interval window = 2 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
 
   // Maximum instances to return. Defaults to 250, capped at 2500.
-  int32 page_size = 4 [
+  int32 page_size = 3 [
     (google.api.field_behavior) = OPTIONAL,
     (buf.validate.field).int32 = {
       gte: 0
@@ -146,7 +146,7 @@ message ExpandEventRequest {
   ];
 
   // Page token from a previous ExpandEventResponse.next_page_token.
-  string page_token = 5 [(google.api.field_behavior) = OPTIONAL];
+  string page_token = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
 // Response message for Events.ExpandEvent.
