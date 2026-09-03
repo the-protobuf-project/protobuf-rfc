@@ -1,0 +1,159 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc6350.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc6350/user/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ContactPropertyProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+
+// Nickname is the NICKNAME property, RFC 6350 section 6.2.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.3>.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.2.3.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.3
+message Nickname {
+  // One or more nicknames, comma-separated on the wire within this single
+  // NICKNAME instance and sharing its TYPE and PREF.
+  repeated string values = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// Url is the URL property, RFC 6350 section 6.7.8 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.7.8>.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.7.8.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.7.8
+message Url {
+  // The URI itself, documented as RFC 3986 <https://www.rfc-editor.org/rfc/rfc3986.html> rather than wrapped in a shared type --
+  // AIP-215 <https://aip.dev/215> permits no message nothing outside this package could reference.
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.uri = true
+  ];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// Role is the ROLE property, RFC 6350 section 6.6.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.2>.
+//
+// A distinct property from TITLE, section 6.6.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.1>: TITLE is a job title, ROLE
+// is the function performed, kept separate to match the RFC's own
+// distinction rather than merged into one field.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.6.2.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.2
+message Role {
+  // The role or function, e.g. "Executive".
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// InstantMessage is the IMPP property, RFC 6350 section 6.4.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.3> (Instant
+// Messaging and Presence Protocol).
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.4.3.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.3
+message InstantMessage {
+  // The URI, e.g. "xmpp:alice@example.com". Scheme varies by provider; RFC
+  // 6350 does not fix one.
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.uri = true
+  ];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// Language is the LANG property, RFC 6350 section 6.4.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.4>.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.4.4.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.4
+message Language {
+  // An RFC 5646 <https://www.rfc-editor.org/rfc/rfc5646.html> language tag, e.g. "en-US". Not pattern-validated: BCP 47's
+  // grammar is not worth re-encoding as a regex for what a parser would
+  // reject anyway.
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}

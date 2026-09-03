@@ -28,7 +28,8 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc5545.todo.v1";
 // cross-package message reference, so every value type shared between
 // iCalendar components must be duplicated per component package. RRULE,
 // ATTENDEE, ORGANIZER and VALARM are therefore deliberately absent until a
-// consumer needs them on a todo -- see plan/01-icalendar.md.
+// consumer needs them on a todo -- see the AIP-215 duplication tax in
+// plan/00-sequence.md.
 //
 // Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.6.2.
 // https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.2

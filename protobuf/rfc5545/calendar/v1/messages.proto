@@ -9,6 +9,7 @@ import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
+import "google/type/interval.proto";
 import "protobuf/rfc5545/calendar/v1/calendar.proto";
 
 option java_multiple_files = true;
@@ -106,4 +107,70 @@ message UndeleteCalendarRequest {
     (google.api.resource_reference).type = "protobufrfc.dev/Calendar",
     (buf.validate.field).string.pattern = "^calendars/[^/]+$"
   ];
+}
+
+// Request message for Calendars.QueryFreeBusy, RFC 4791 section 7.10 <https://www.rfc-editor.org/rfc/rfc4791.html#section-7.10> (the
+// free-busy-query REPORT).
+message QueryFreeBusyRequest {
+  // The calendar to query, "calendars/{calendar}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Calendar",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+$"
+  ];
+
+  // The window to report busy periods within. Required, and both bounds with
+  // it, for the same reason as ExpandEventRequest.window: an open-ended query
+  // over every event ever scheduled has no sensible default.
+  google.type.Interval window = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+}
+
+// Response message for Calendars.QueryFreeBusy.
+message QueryFreeBusyResponse {
+  // The busy periods found within the requested window. Free time is not
+  // listed; its absence from this result is what "free" means.
+  repeated FreeBusyPeriod periods = 1;
+}
+
+// FreeBusyPeriod is one interval from a free/busy query result, structurally
+// what the FREEBUSY property, RFC 5545 section 3.8.4.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.3>, carries -- but
+// computed on demand from stored events, not itself stored. VFREEBUSY
+// (section 3.6.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.4>) has no existence independent of the events it
+// summarises, so this schema gives it no resource, only this query result.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.4.3.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.3
+message FreeBusyPeriod {
+  // The interval, half-open: busy_type applies from `start_time` up to but
+  // not including `end_time`.
+  google.type.Interval period = 1;
+
+  // Why the interval is reported busy.
+  BusyType busy_type = 2;
+}
+
+// BusyType is the FBTYPE parameter, RFC 5545 section 3.2.9 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.9>.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.2.9.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.9
+enum BusyType {
+  // Not specified. Absent from any FreeBusyPeriod this schema produces --
+  // every period this API returns carries an explicit type.
+  BUSY_TYPE_UNSPECIFIED = 0;
+
+  // BUSY. The default FBTYPE when a source property does not state one.
+  BUSY_TYPE_BUSY = 1;
+
+  // BUSY-UNAVAILABLE. Busy, and the interval cannot be scheduled at all.
+  BUSY_TYPE_BUSY_UNAVAILABLE = 2;
+
+  // BUSY-TENTATIVE. Busy because of one or more tentatively scheduled events.
+  BUSY_TYPE_BUSY_TENTATIVE = 3;
+
+  // FREE. Included only if a server chooses to report explicit free gaps
+  // rather than relying on absence from the result to mean free.
+  BUSY_TYPE_FREE = 4;
 }

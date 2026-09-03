@@ -1,0 +1,89 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc6350.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc6350/user/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ContactLocationProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+
+// Geo is the GEO property, RFC 6350 section 6.5.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.5.2>.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.5.2.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.5.2
+message Geo {
+  // The geo: URI, RFC 5870 <https://www.rfc-editor.org/rfc/rfc5870.html>, e.g. "geo:37.386013,-122.082932". Not
+  // google.type.LatLng: unlike iCalendar's GEO (RFC 5545 section 3.8.1.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.6>), which
+  // is already a bare lat;lon pair, this is a URI that needs parsing to
+  // extract coordinates -- deferred until a consumer queries geographically.
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.uri = true
+  ];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// Timezone is the TZ property, RFC 6350 section 6.5.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.5.1>.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.5.1.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.5.1
+message Timezone {
+  // Exactly one form -- section 6.5.1 permits a free-text zone name, a URI
+  // referencing a timezone database entry, or a bare UTC offset. Not
+  // google.type.TimeZone: that type requires an IANA id, which only the text
+  // form sometimes carries.
+  oneof value {
+    // The default form: an IANA zone name, an abbreviation, or free text.
+    string text = 1;
+
+    // A URI referencing a timezone database entry.
+    string uri = 2 [
+      (buf.validate.field).string.uri = true,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+    ];
+
+    // A fixed offset, section 3.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-3.3>, e.g. "-0500": sign, then two-digit hour,
+    // then an optional two-digit minute, no colon. The RFC itself calls this
+    // form NOT RECOMMENDED -- an offset drifts with DST while a zone id does
+    // not -- but permitted, so it round-trips rather than being rejected.
+    string utc_offset = 3 [
+      (buf.validate.field).string.pattern = "^[+-][0-9]{2}([0-9]{2})?$",
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+    ];
+  }
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}

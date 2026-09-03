@@ -7,7 +7,10 @@ package protobuf.rfc6350.user.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
+import "protobuf/rfc6350/user/v1/contact_location.proto";
 import "protobuf/rfc6350/user/v1/contact_method.proto";
+import "protobuf/rfc6350/user/v1/contact_property.proto";
+import "protobuf/rfc6350/user/v1/contact_relation.proto";
 import "protobuf/rfc6350/user/v1/date_or_text.proto";
 import "protobuf/rfc6350/user/v1/types.proto";
 
@@ -21,9 +24,14 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
 // embeds this. RFC 6350 specifies what a contact is and says nothing about
 // how one is named, stored or listed, so a resource name has no place here.
 //
-// Scope is the nine core properties -- KIND, FN, N, EMAIL, TEL, ADR, ORG,
-// TITLE, NOTE. Section 6 defines roughly thirty more; they get added when a
-// consumer needs them.
+// Scope is nineteen properties -- KIND, FN, N, EMAIL, TEL, ADR, ORG, TITLE,
+// NOTE, BDAY, ANNIVERSARY, NICKNAME, URL, ROLE, IMPP, LANG, GEO, TZ, RELATED
+// -- plus CATEGORIES as a flat filter target. MEMBER is deliberately not
+// among them: it is the same problem Group and Membership already solve, in
+// protobuf.rfc4519.membership.v1, so it stays there rather than duplicating
+// group affiliation as a second mechanism on Contact -- see Relation for the
+// reasoning. Section 6 defines roughly fifteen more properties; they get
+// added when a consumer needs them.
 //
 // Reference: RFC 6350 "vCard Format Specification", section 6.
 // https://www.rfc-editor.org/rfc/rfc6350.html#section-6
@@ -72,4 +80,39 @@ message Contact {
 
   // ANNIVERSARY, section 6.2.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.6>. Cardinality *1.
   DateOrText anniversary = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // NICKNAME, section 6.2.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.3>.
+  repeated Nickname nicknames = 13 [(google.api.field_behavior) = OPTIONAL];
+
+  // URL, section 6.7.8 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.7.8>.
+  repeated Url urls = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // CATEGORIES, section 6.7.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.7.1>.
+  //
+  // Flat, not wrapped with TYPE/PREF like the other repeated properties here:
+  // this is the natural AIP-160 <https://aip.dev/160> filter target -- `categories:"vip"` -- and a
+  // wrapper message would put that value behind a field path filter cannot
+  // see into as directly. TYPE and PREF are permitted by the RFC but rarely
+  // populated in practice for a tag list; add them back if a consumer needs
+  // them.
+  repeated string categories = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // ROLE, section 6.6.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.2>.
+  repeated Role roles = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // IMPP, section 6.4.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.3>.
+  repeated InstantMessage instant_messages = 17 [(google.api.field_behavior) = OPTIONAL];
+
+  // LANG, section 6.4.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.4>.
+  repeated Language languages = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  // GEO, section 6.5.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.5.2>.
+  repeated Geo locations = 19 [(google.api.field_behavior) = OPTIONAL];
+
+  // TZ, section 6.5.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.5.1>.
+  repeated Timezone timezones = 20 [(google.api.field_behavior) = OPTIONAL];
+
+  // RELATED, section 6.6.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.6>. MEMBER (section 6.6.5 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.5>) is deliberately
+  // not a field here; see Relation's own comment for why.
+  repeated Relation relations = 21 [(google.api.field_behavior) = OPTIONAL];
 }

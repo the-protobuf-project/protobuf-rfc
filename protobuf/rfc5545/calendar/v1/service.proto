@@ -22,6 +22,13 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc5545.calendar.v1
 // in its own package. Deleting a calendar therefore affects a resource this
 // service cannot see, which is why DeleteCalendar requires force rather than
 // cascading silently.
+//
+// AIP-131..135 also happens to cover most of CalDAV, RFC 4791: MKCALENDAR
+// (section 5.3.1 <https://www.rfc-editor.org/rfc/rfc4791.html#section-5.3.1>) is CreateCalendar; the calendar-query REPORT's time-range
+// filter (section 7.8 <https://www.rfc-editor.org/rfc/rfc4791.html#section-7.8>) is ListEvents' AIP-160 filter over start/end; and
+// If-Match concurrency (section 5.3.4 <https://www.rfc-editor.org/rfc/rfc4791.html#section-5.3.4>) is the `etag` every resource already
+// carries, AIP-154 <https://aip.dev/154>. QueryFreeBusy is the one CalDAV capability with no
+// standard-method equivalent.
 service Calendars {
   // Retrieves one calendar.
   //
@@ -142,5 +149,27 @@ service Calendars {
       body: "*"
     };
     option (google.api.method_signature) = "name";
+  }
+
+  // Reports busy periods for a calendar over a time window, without
+  // returning the events themselves, RFC 4791 section 7.10 <https://www.rfc-editor.org/rfc/rfc4791.html#section-7.10> (the
+  // free-busy-query REPORT).
+  //
+  //   POST /v1/{name=calendars/*}:query
+  //   body: the whole request message
+  //
+  // A custom method, not List with a projection: RFC 4791 grants
+  // CALDAV:read-free-busy independently of read access to the events
+  // themselves, section 6.1.1 <https://www.rfc-editor.org/rfc/rfc4791.html#section-6.1.1> -- a caller who may see only availability must
+  // never be handed the underlying Event.
+  //
+  //   NOT_FOUND          no such calendar
+  //   INVALID_ARGUMENT   window.end_time is not after window.start_time
+  //   PERMISSION_DENIED  caller may not read free/busy for this calendar
+  rpc QueryFreeBusy(QueryFreeBusyRequest) returns (QueryFreeBusyResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*}:query"
+      body: "*"
+    };
   }
 }

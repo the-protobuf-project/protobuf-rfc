@@ -18,9 +18,17 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
 // Users manages contacts as addressable resources.
 //
 // RFC 6350 specifies a data format and no access protocol. CardDAV (RFC
-// 6352) is the standards-track answer and is deliberately deferred: it is a
-// sync protocol with its own resource model, and adopting it before Contact
-// and User stabilize would freeze both.
+// 6352) is the standards-track answer, and -- following the same audit that
+// found CalDAV needed no new RPCs on Calendars -- needs none here either:
+// address book collection creation is plain WebDAV MKCOL (section 6.3.1 <https://www.rfc-editor.org/rfc/rfc6352.html#section-6.3.1>) so
+// CreateUser already answers it; If-Match concurrency (section 6.3.2.3 <https://www.rfc-editor.org/rfc/rfc6352.html#section-6.3.2.3>) is
+// the `etag` every resource already carries, AIP-154 <https://aip.dev/154>; and the
+// addressbook-query REPORT (section 8.6 <https://www.rfc-editor.org/rfc/rfc6352.html#section-8.6>) is ListUsers' AIP-160 <https://aip.dev/160> filter over
+// Contact's own fields. Unlike CalDAV, there is no capability with no
+// standard-method equivalent, so this package gains nothing CardDAV-specific
+// at all. addressbook-multiget (section 8.7 <https://www.rfc-editor.org/rfc/rfc6352.html#section-8.7>) is deferred the same way as
+// CalDAV's calendar-multiget -- repeated GetUser today, a batch method if a
+// consumer needs the round-trip savings.
 //
 // These are the AIP-131..135 standard methods and nothing else. Serializing
 // users to a vCard file is not a User-specific concern -- see

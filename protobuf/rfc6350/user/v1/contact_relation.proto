@@ -1,0 +1,130 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc6350.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ContactRelationProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+
+// Relation is the RELATED property, RFC 6350 section 6.6.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.6>.
+//
+// Not MEMBER (section 6.6.5 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.5>): MEMBER expresses a KIND=group vCard's
+// membership and is not modelled here at all, because it is the same problem
+// `Group` and `Membership` already solve in `rfc4519/v1` -- a KIND_GROUP
+// Contact's members belong in a Membership pointing at `users/{user}`, not in
+// a second, parallel list on Contact. RELATED is a different, unaddressed
+// capability: a typed relationship between two arbitrary contacts, which
+// Membership's group-affiliation model does not express.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.6.6.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.6
+message Relation {
+  // Either form identifies the related person. section 6.6.6 permits a URI
+  // (ideally a `urn:uuid:` or another vCard's URL) or free text when no
+  // addressable identifier exists.
+  oneof value {
+    // A URI, ideally a `urn:uuid:` or another vCard's URL.
+    string uri = 1 [
+      (buf.validate.field).string.uri = true,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+    ];
+
+    // Free text, for a relation with no addressable identifier.
+    string text = 2;
+  }
+
+  // TYPE parameter -- RELATED does not take the generic work/home Type used
+  // elsewhere in this package; section 6.6.6 defines its own closed set of
+  // relationship kinds instead.
+  repeated RelationType relation_types = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// RelationType is RELATED's own TYPE value set, RFC 6350 section 6.6.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.6>,
+// distinct from the generic work/home Type used by every other property in
+// this package that takes a TYPE parameter.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.6.6.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.6
+enum RelationType {
+  // Not specified.
+  RELATION_TYPE_UNSPECIFIED = 0;
+
+  // "contact".
+  RELATION_TYPE_CONTACT = 1;
+
+  // "acquaintance".
+  RELATION_TYPE_ACQUAINTANCE = 2;
+
+  // "friend".
+  RELATION_TYPE_FRIEND = 3;
+
+  // "met".
+  RELATION_TYPE_MET = 4;
+
+  // "co-worker".
+  RELATION_TYPE_CO_WORKER = 5;
+
+  // "colleague".
+  RELATION_TYPE_COLLEAGUE = 6;
+
+  // "co-resident".
+  RELATION_TYPE_CO_RESIDENT = 7;
+
+  // "neighbor".
+  RELATION_TYPE_NEIGHBOR = 8;
+
+  // "child".
+  RELATION_TYPE_CHILD = 9;
+
+  // "parent".
+  RELATION_TYPE_PARENT = 10;
+
+  // "sibling".
+  RELATION_TYPE_SIBLING = 11;
+
+  // "spouse".
+  RELATION_TYPE_SPOUSE = 12;
+
+  // "kin".
+  RELATION_TYPE_KIN = 13;
+
+  // "muse".
+  RELATION_TYPE_MUSE = 14;
+
+  // "crush".
+  RELATION_TYPE_CRUSH = 15;
+
+  // "date".
+  RELATION_TYPE_DATE = 16;
+
+  // "sweetheart".
+  RELATION_TYPE_SWEETHEART = 17;
+
+  // "me": the vCard's own subject, used when one vCard's RELATED points back
+  // to itself under another identifier.
+  RELATION_TYPE_ME = 18;
+
+  // "agent".
+  RELATION_TYPE_AGENT = 19;
+
+  // "emergency".
+  RELATION_TYPE_EMERGENCY = 20;
+}
