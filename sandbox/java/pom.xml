@@ -18,22 +18,29 @@
   </properties>
 
   <dependencies>
+    <!--
+      protoc-gen-java currently emits gencode stamped 4.36.1, which is newer
+      than any protobuf-java on Maven Central. That only matters at runtime,
+      where the version check lives; this sandbox compiles and never runs, so
+      the newest published runtime is the right pin. Declared first so it wins
+      over protovalidate's older transitive protobuf-java.
+    -->
     <dependency>
       <groupId>com.google.protobuf</groupId>
       <artifactId>protobuf-java</artifactId>
-      <version>4.33.1</version>
+      <version>4.35.0</version>
     </dependency>
     <!-- google/api and google/longrunning descriptors the schema imports. -->
     <dependency>
       <groupId>com.google.api.grpc</groupId>
       <artifactId>proto-google-common-protos</artifactId>
-      <version>2.62.0</version>
+      <version>2.72.0</version>
     </dependency>
     <!-- buf/validate. -->
     <dependency>
       <groupId>build.buf</groupId>
       <artifactId>protovalidate</artifactId>
-      <version>0.15.2</version>
+      <version>0.7.0</version>
     </dependency>
   </dependencies>
 

@@ -183,6 +183,12 @@ jobs:
         run: |
           pip install --quiet -r sandbox/python/requirements.txt
           cd gen/python
+          # Make the generated tree a regular package. Without __init__.py it
+          # is only a namespace portion, and Python's import scan lets a
+          # regular package named `protobuf` further down sys.path win over a
+          # namespace portion at the front -- which is why importing
+          # protobuf.rfc4519 failed while protobuf itself resolved.
+          find protobuf -type d -exec touch {}/__init__.py \;
           # Importing every module exercises the descriptor pool, which is
           # where a bad schema actually fails. Compiling the files would not.
           python - <<'PY'
