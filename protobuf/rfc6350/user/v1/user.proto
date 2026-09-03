@@ -1,0 +1,77 @@
+syntax = "proto3";
+
+package protobuf.rfc6350.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc6350/user/v1/contact.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "UserProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+
+// User is an addressable person.
+//
+// Identity is ours, the property vocabulary is RFC 6350's. This is the shape
+// to copy for Event, Todo and the rest: a thin resource shell over an
+// RFC-shaped value object.
+//
+// Reference: RFC 6350 "vCard Format Specification".
+// https://www.rfc-editor.org/rfc/rfc6350.html
+message User {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/User"
+    pattern: "users/{user}"
+    singular: "user"
+    plural: "users"
+  };
+
+  // Resource name, "users/{user}". Assigned by the server.
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^users/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // UID, section 6.7.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.7.6>. The interchange identity, distinct from uid above.
+  //
+  // Two identifiers because they answer different questions. uid is ours and
+  // is a UUID4 because AIP-148 <https://aip.dev/148> says so. This one arrives inside an imported
+  // vCard, is whatever the originating system chose, and must survive a round
+  // trip unchanged or every re-import duplicates the address book.
+  string vcard_uid = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // The vCard property set for this user.
+  Contact contact = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // When the user was created.
+  google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the user was last modified.
+  google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. Pass it back in an
+  // update or delete to make the write conditional: if the resource changed
+  // since it was read, the request fails instead of overwriting.
+  string etag = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the user was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp delete_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted user is purged for good. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp expire_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

@@ -1,0 +1,60 @@
+syntax = "proto3";
+
+package protobuf.rfc6350.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc6350/user/v1/contact_method.proto";
+import "protobuf/rfc6350/user/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ContactProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+
+// Contact is the vCard property set, RFC 6350 section 6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6>.
+//
+// A value object with no identity of its own: User carries the identity and
+// embeds this. RFC 6350 specifies what a contact is and says nothing about
+// how one is named, stored or listed, so a resource name has no place here.
+//
+// Scope is the nine core properties -- KIND, FN, N, EMAIL, TEL, ADR, ORG,
+// TITLE, NOTE. Section 6 defines roughly thirty more; they get added when a
+// consumer needs them.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6
+message Contact {
+  // KIND, section 6.1.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.1.4>.
+  Kind kind = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // FN, section 6.2.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.1>. Cardinality 1*: at least one is required, and FN is
+  // the only property RFC 6350 makes mandatory.
+  repeated string display_names = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).repeated.min_items = 1
+  ];
+
+  // N, section 6.2.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.2>. Cardinality *1.
+  Name name_components = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // EMAIL, section 6.4.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.2>.
+  repeated Email emails = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // TEL, section 6.4.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.1>.
+  repeated Telephone telephones = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // ADR, section 6.3.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.3.1>.
+  repeated Address addresses = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // ORG, section 6.6.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.4>.
+  repeated Organization organizations = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // TITLE, section 6.6.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.1>.
+  repeated string titles = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // NOTE, section 6.7.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.7.2>.
+  repeated string notes = 9 [(google.api.field_behavior) = OPTIONAL];
+}

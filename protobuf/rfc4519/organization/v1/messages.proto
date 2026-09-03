@@ -1,0 +1,98 @@
+syntax = "proto3";
+
+package protobuf.rfc4519.organization.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "protobuf/rfc4519/organization/v1/organization.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc4519.organization.v1";
+
+// Request message for Organizations.GetOrganization, AIP-131 <https://aip.dev/131>.
+message GetOrganizationRequest {
+  // Name of the organization to retrieve, "organizations/{organization}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Organization",
+    (buf.validate.field).string.pattern = "^organizations/[^/]+$"
+  ];
+}
+
+// Request message for Organizations.ListOrganizations, AIP-132 <https://aip.dev/132>.
+message ListOrganizationsRequest {
+  // Maximum organizations to return. Defaults to 50, capped at 1000.
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ListOrganizationsResponse.next_page_token.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160 <https://aip.dev/160>.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include soft-deleted organizations in the result. AIP-164 <https://aip.dev/164>.
+  bool show_deleted = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Organizations.ListOrganizations, AIP-132 <https://aip.dev/132>.
+message ListOrganizationsResponse {
+  // The organizations on this page.
+  repeated Organization organizations = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+}
+
+// Request message for Organizations.CreateOrganization, AIP-133 <https://aip.dev/133>.
+message CreateOrganizationRequest {
+  // The organization to create.
+  Organization organization = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Client-assigned id, becoming the last segment of the resource name. The
+  // server generates one when empty.
+  string organization_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Organizations.UpdateOrganization, AIP-134 <https://aip.dev/134>.
+message UpdateOrganizationRequest {
+  // The organization to update. Its name field identifies the resource.
+  Organization organization = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Fields to update. An empty mask updates all mutable fields.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Organizations.DeleteOrganization, AIP-135 <https://aip.dev/135>.
+message DeleteOrganizationRequest {
+  // Name of the organization to delete, "organizations/{organization}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Organization",
+    (buf.validate.field).string.pattern = "^organizations/[^/]+$"
+  ];
+}
+
+// Request message for Organizations.UndeleteOrganization, AIP-164 <https://aip.dev/164>.
+message UndeleteOrganizationRequest {
+  // Name of the soft-deleted organization to restore.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Organization",
+    (buf.validate.field).string.pattern = "^organizations/[^/]+$"
+  ];
+}

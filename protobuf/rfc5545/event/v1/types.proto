@@ -1,0 +1,67 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+option java_multiple_files = true;
+option java_outer_classname = "TypesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Confirmation is the STATUS property for a VEVENT, RFC 5545 section
+// 3.8.1.11.
+//
+// Not named Status or State. AIP-216 <https://aip.dev/216> reserves both for server-owned lifecycle
+// enums and requires such a field to be OUTPUT_ONLY, but an organiser sets
+// this one -- moving an event from tentative to confirmed is the whole point.
+// The name describes what the property records; the values are the RFC's.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)".
+// https://www.rfc-editor.org/rfc/rfc5545.html
+enum Confirmation {
+  // Not specified.
+  CONFIRMATION_UNSPECIFIED = 0;
+
+  // TENTATIVE. Indicates the event is tentative.
+  CONFIRMATION_TENTATIVE = 1;
+
+  // CONFIRMED. Indicates the event is definite.
+  CONFIRMATION_CONFIRMED = 2;
+
+  // CANCELLED. Indicates the event was cancelled.
+  CONFIRMATION_CANCELLED = 3;
+}
+
+// Classification is the CLASS property, RFC 5545 section 3.8.1.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3>.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.1.3.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3
+enum Classification {
+  // Not specified; treat as CLASSIFICATION_PUBLIC, the default in
+  // section 3.8.1.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.3>.
+  CLASSIFICATION_UNSPECIFIED = 0;
+
+  // PUBLIC.
+  CLASSIFICATION_PUBLIC = 1;
+
+  // PRIVATE.
+  CLASSIFICATION_PRIVATE = 2;
+
+  // CONFIDENTIAL.
+  CLASSIFICATION_CONFIDENTIAL = 3;
+}
+
+// Transparency is the TRANSP property, RFC 5545 section 3.8.2.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.7>. It decides
+// whether an event consumes free/busy time, not whether it is visible.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.2.7.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.7
+enum Transparency {
+  // Not specified; treat as TRANSPARENCY_OPAQUE, the default in
+  // section 3.8.2.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.7>.
+  TRANSPARENCY_UNSPECIFIED = 0;
+
+  // OPAQUE. Blocks the interval as busy.
+  TRANSPARENCY_OPAQUE = 1;
+
+  // TRANSPARENT. Leaves the interval free.
+  TRANSPARENCY_TRANSPARENT = 2;
+}

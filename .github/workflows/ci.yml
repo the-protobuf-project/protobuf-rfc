@@ -1,0 +1,80 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      # buf format is a gate, not a convenience. Without it, whichever editor
+      # last opened a file decides how it wraps.
+      - name: Format
+        run: buf format --diff --exit-code
+
+      - name: Lint
+        run: buf lint
+
+      - name: Build
+        run: buf build
+
+      # Resolves buf.yaml deps itself, so googleapis and protovalidate are
+      # available without a hand-built descriptor set. ignore-comment-disables
+      # enforces CLAUDE.md rule 1: no rule may be disabled, including by an
+      # inline comment in a proto.
+      - name: API design lint
+        uses: the-protobuf-project/setup-google-api-linter@v1
+        with:
+          paths: protobuf/**/*.proto
+          buf: true
+          ignore-comment-disables: true
+          output-format: github
+          fail-on-error: true
+
+      # Shared with scripts/lint.sh so local and CI enforce the same cap.
+      - name: File length cap
+        run: ./scripts/check-line-cap.sh
+
+  breaking:
+    runs-on: ubuntu-latest
+    # Compares against the published module once it exists, the branch until
+    # then. Runs on main too, because push-module depends on it.
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: bufbuild/buf-action@v1
+        with:
+          setup_only: true
+
+      # Every rename in PLAN.md's naming table was free only because nothing
+      # had generated code yet. Once consumers exist, this is what keeps a
+      # rename from becoming a silent break.
+      - name: Check for breaking changes
+        run: |
+          buf breaking --against "buf.build/the-protobuf-project/protobuf-rfc" || \
+            buf breaking --against "https://github.com/${{ github.repository }}.git#branch=main"
+
+  push-module:
+    # Publishes the schema module to the BSR. Only from main, and only after
+    # both gates pass — a module pushed with a breaking change cannot be
+    # recalled, only superseded.
+    needs: [lint, breaking]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: bufbuild/buf-action@v1
+        with:
+          push: true
+          token: ${{ secrets.BUF_TOKEN }}

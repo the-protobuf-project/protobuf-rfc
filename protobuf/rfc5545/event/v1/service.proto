@@ -1,0 +1,182 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/protobuf/empty.proto";
+import "protobuf/rfc5545/event/v1/event.proto";
+import "protobuf/rfc5545/event/v1/messages.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Events manages RFC 5545 events as resources.
+//
+// Named Events, not Calendar: the calendar a event belongs to is its own
+// resource, managed by protobuf.rfc5545.calendar.v1.Calendars. A service
+// named after the parent while managing the child is how a reader ends up
+// looking for CreateCalendar here.
+//
+// AIP-131..135 plus one custom method. ExpandEvent earns its place where
+// Export did not: expansion is specific to recurring events and cannot be
+// generalised across resource types, whereas serialising to a file can --
+// that lives in protobuf.shared.interchange.v1.Interchange.
+service Events {
+  // Retrieves one event.
+  //
+  //   GET /v1/{name=calendars/*/events/*}
+  //
+  // Safe and idempotent. Returns the resource as stored; no field is computed
+  // per-caller. Read the `etag` here and pass it back on update or delete to
+  // make the write conditional.
+  //
+  //   NOT_FOUND          no such event, or it is soft-deleted and `show_deleted` was not set
+  //   INVALID_ARGUMENT   name does not match calendars/*/events/*
+  //   PERMISSION_DENIED  caller may not read it
+  rpc GetEvent(GetEventRequest) returns (Event) {
+    option (google.api.http) = {get: "/v1/{name=calendars/*/events/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists events.
+  //
+  //   GET /v1/{parent=calendars/*}/events
+  //
+  // Paginated per AIP-158: pass `page_size` (defaults to 50, capped at 1000)
+  // and the `next_page_token` from the previous response. An empty
+  // `next_page_token` means the last page. Page tokens are opaque and may
+  // expire; do not construct or store them.
+  //
+  // Filtering uses the AIP-160 expression language over the resource's own
+  // fields. Results carry no guaranteed order.
+  //
+  // Returns stored events, one per recurrence rule -- listing does not
+  // expand recurrences. An unbounded rule has infinitely many instances, so
+  // expansion needs a window and lives in ExpandEvent.
+  //
+  //   INVALID_ARGUMENT   malformed filter, or page_size out of range
+  //   PERMISSION_DENIED  caller may not list this collection
+  rpc ListEvents(ListEventsRequest) returns (ListEventsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=calendars/*}/events"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Creates a event.
+  //
+  //   POST /v1/{parent=calendars/*}/events
+  //   body: the event itself
+  //
+  // Server-assigned fields on the request body are ignored: `name`, `uid`,
+  // `etag` and the timestamps are set by the server regardless of what is
+  // sent. Supply `event_id` to choose the final path segment; leave it empty
+  // and the server generates one.
+  //
+  // Not idempotent. Retrying after a timeout may create a second event;
+  // supply `event_id` if the caller needs retry safety.
+  //
+  //   ALREADY_EXISTS     that event_id is taken
+  //   INVALID_ARGUMENT   a field violates its buf.validate constraint
+  //   PERMISSION_DENIED  caller may not create here
+  rpc CreateEvent(CreateEventRequest) returns (Event) {
+    option (google.api.http) = {
+      post: "/v1/{parent=calendars/*}/events"
+      body: "event"
+    };
+    option (google.api.method_signature) = "parent,event,event_id";
+  }
+
+  // Updates a event.
+  //
+  //   PATCH /v1/{event.name=calendars/*/events/*}
+  //   body: the event itself
+  //
+  // A partial update: only fields named in `update_mask` are written. An
+  // empty mask writes every mutable field, which will clear anything the
+  // caller left unset -- pass a mask unless that is the intent. OUTPUT_ONLY
+  // and IMMUTABLE fields are rejected rather than silently dropped.
+  //
+  // Idempotent. Pass the `etag` read from Get to make the write conditional.
+  //
+  //   NOT_FOUND          no such event
+  //   ABORTED            etag does not match the stored resource
+  //   INVALID_ARGUMENT   mask names an unknown or immutable field
+  //   PERMISSION_DENIED  caller may not modify it
+  rpc UpdateEvent(UpdateEventRequest) returns (Event) {
+    option (google.api.http) = {
+      patch: "/v1/{event.name=calendars/*/events/*}"
+      body: "event"
+    };
+    option (google.api.method_signature) = "event,update_mask";
+  }
+
+  // Deletes a event.
+  //
+  //   DELETE /v1/{name=calendars/*/events/*}
+  //
+  // Soft delete: the event is marked deleted, disappears from List unless
+  // `show_deleted` is set, and is purged at `expire_time`. Recover it with
+  // Undelete before then.
+  //
+  // Idempotent in effect but not in reporting: a second delete returns
+  // NOT_FOUND rather than succeeding silently.
+  //
+  //   NOT_FOUND          no such event
+  //   ABORTED            etag does not match
+  //   PERMISSION_DENIED  caller may not delete it
+  rpc DeleteEvent(DeleteEventRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=calendars/*/events/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Materialises the occurrences of a recurring event within a time window.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:expand
+  //   body: the whole request message
+  //
+  // A custom method (AIP-136) because expansion cannot be generalised across
+  // resource types the way export can -- only a recurrence rule expands.
+  //
+  // The window is required at both ends, deliberately. A rule bounded by
+  // neither UNTIL nor COUNT generates infinitely many instances, so there is
+  // no safe default and a missing bound is a caller bug worth reporting
+  // rather than one the server guesses around.
+  //
+  // Returns materialised instances with EXDATE exclusions removed and RDATE
+  // additions folded in. None is a stored resource, so none carries a
+  // resource name and none can be passed to Get, Update or Delete -- edit the
+  // series through its stored event instead.
+  //
+  // Paginated like List, with its own `page_size` default of 250.
+  //
+  //   NOT_FOUND          no such event
+  //   INVALID_ARGUMENT   window_end_time is not after window_start_time
+  //   FAILED_PRECONDITION  the event has no recurrence rule
+  //   PERMISSION_DENIED  caller may not read it
+  rpc ExpandEvent(ExpandEventRequest) returns (ExpandEventResponse) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:expand"
+      body: "*"
+    };
+  }
+
+  // Restores a soft-deleted event.
+  //
+  //   POST /v1/{name=calendars/*/events/*}:undelete
+  //
+  // Valid only before `expire_time`; after that the event is gone and this
+  // returns NOT_FOUND. Clears `delete_time` and `expire_time` and returns the
+  // event as it was.
+  //
+  //   NOT_FOUND          no such event, or already purged
+  //   ALREADY_EXISTS     the event is not deleted
+  //   PERMISSION_DENIED  caller may not restore it
+  rpc UndeleteEvent(UndeleteEventRequest) returns (Event) {
+    option (google.api.http) = {
+      post: "/v1/{name=calendars/*/events/*}:undelete"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}

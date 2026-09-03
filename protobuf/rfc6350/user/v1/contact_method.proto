@@ -1,0 +1,111 @@
+syntax = "proto3";
+
+package protobuf.rfc6350.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc6350/user/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ContactMethodProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+
+// Email is the EMAIL property, RFC 6350 section 6.4.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.2>.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.4.2.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.2
+message Email {
+  // The address itself.
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.email = true
+  ];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// Telephone is the TEL property, RFC 6350 section 6.4.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.1>.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.4.1.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.1
+message Telephone {
+  // Section 6.4.1 gives TEL a default value type of text but says the value
+  // SHOULD be a tel: URI (RFC 3966). Both occur in real vCards, so the oneof
+  // carries the distinction rather than erasing it.
+  oneof value {
+    // The tel: URI form, preferred by the RFC. An RFC 3986 URI in the
+    // canonical form of section 6.2.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.2>, e.g. "tel:+1-555-0100".
+    string uri = 1 [
+      (buf.validate.field).string.uri = true,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+    ];
+
+    // The free-text form, for numbers that will not parse as a URI.
+    string text = 2;
+  }
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // Telephone-specific TYPE values, section 6.4.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.1>.
+  repeated Feature features = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
+  int32 pref = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// Telephone-specific TYPE values, section 6.4.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.1>. Orthogonal to Type: a TEL
+// can be TYPE="work,cell".
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.4.1.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.1
+enum Feature {
+  // Not specified.
+  FEATURE_UNSPECIFIED = 0;
+
+  // Supports text messages (SMS).
+  FEATURE_TEXT = 1;
+
+  // Voice calls, the default per section 6.4.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.1>.
+  FEATURE_VOICE = 2;
+
+  // Facsimile.
+  FEATURE_FAX = 3;
+
+  // Cellular.
+  FEATURE_CELL = 4;
+
+  // Video conversation.
+  FEATURE_VIDEO = 5;
+
+  // Paging device.
+  FEATURE_PAGER = 6;
+
+  // Text telephone for hearing-impaired callers.
+  FEATURE_TEXTPHONE = 7;
+}

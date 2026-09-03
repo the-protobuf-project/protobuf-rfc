@@ -1,0 +1,96 @@
+syntax = "proto3";
+
+package protobuf.rfc6350.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "protobuf/rfc6350/user/v1/user.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+
+// Request message for Users.GetUser, AIP-131 <https://aip.dev/131>.
+message GetUserRequest {
+  // Name of the user to retrieve, "users/{user}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "protobufrfc.dev/User"}
+  ];
+}
+
+// Request message for Users.ListUsers, AIP-132 <https://aip.dev/132>.
+message ListUsersRequest {
+  // Maximum users to return. Defaults to 50, capped at 1000.
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ListUsersResponse.next_page_token.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160 <https://aip.dev/160>.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include soft-deleted users in the result. AIP-164 <https://aip.dev/164>.
+  bool show_deleted = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Users.ListUsers, AIP-132 <https://aip.dev/132>.
+message ListUsersResponse {
+  // The users on this page.
+  repeated User users = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+}
+
+// Request message for Users.CreateUser, AIP-133 <https://aip.dev/133>.
+message CreateUserRequest {
+  // The user to create.
+  User user = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Client-assigned id, becoming the last segment of the resource name. The
+  // server generates one when empty.
+  string user_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Users.UpdateUser, AIP-134 <https://aip.dev/134>.
+message UpdateUserRequest {
+  // The user to update. Its name field identifies the resource.
+  User user = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Fields to update. An empty mask updates all mutable fields.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Users.DeleteUser, AIP-135 <https://aip.dev/135>.
+message DeleteUserRequest {
+  // Name of the user to delete, "users/{user}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "protobufrfc.dev/User"}
+  ];
+}
+
+// Request message for UndeleteUser, AIP-164 <https://aip.dev/164>.
+message UndeleteUserRequest {
+  // Name of the soft-deleted user to restore, "users/{user}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/User",
+    (buf.validate.field).string.pattern = "^users/[^/]+$"
+  ];
+}

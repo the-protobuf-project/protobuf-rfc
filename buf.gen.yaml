@@ -1,0 +1,22 @@
+version: v2
+# Intentionally no plugins.
+#
+# protobuf-rfc is published as a schema registry module, not as generated code.
+# Consumers add it to their own buf.yaml deps and run their own generation, so
+# `buf generate` here is a no-op and CI does not run it.
+#
+# There is deliberately no `go_package` in any file. The Go import path
+# depends entirely on where a consumer generates, so any value committed here
+# would be wrong for everyone but its author. Consumers set it themselves:
+#
+#   managed:
+#     enabled: true
+#     override:
+#       - file_option: go_package_prefix
+#         value: github.com/their-org/their-repo/gen
+#
+# `java_package` is a different case and is still set on every file -- see
+# CLAUDE.md rule 3; api-linter mandates it and no rule here may be disabled.
+managed:
+  enabled: true
+plugins: []

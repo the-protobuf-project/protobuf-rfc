@@ -1,0 +1,149 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc5545/event/v1/recurrence_parts.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "RecurrenceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Recurrence is the RECUR value type, RFC 5545 section 3.3.10 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10>, carried by the
+// RRULE property of section 3.8.5.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.5.3>.
+//
+// Structured rather than the raw "FREQ=MONTHLY;BYDAY=-1FR" string. The string
+// is what iCalendar puts on the wire, but it is opaque to a database: a
+// structured rule is what makes "which billing schedules fire on the last
+// Friday" answerable without parsing every row.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.3.10.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10
+message Recurrence {
+  option (buf.validate.message).cel = {
+    id: "recurrence.no_zero_ordinals"
+    message:
+      "BYMONTHDAY, BYYEARDAY, BYWEEKNO and BYSETPOS exclude 0 (RFC 5545 "
+      "section 3.3.10)"
+    expression:
+      "!(0 in this.month_days) && !(0 in this.year_days) && "
+      "!(0 in this.week_numbers) && !(0 in this.set_positions)"
+  };
+  option (buf.validate.message).cel = {
+    id: "recurrence.week_numbers_yearly_only"
+    message: "BYWEEKNO is only valid when FREQ is YEARLY (RFC 5545 section 3.3.10)"
+    expression: "this.week_numbers.size() == 0 || this.frequency == 7"
+  };
+
+  // FREQ. The only mandatory part of a recurrence rule.
+  Frequency frequency = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // UNTIL and COUNT are mutually exclusive in section 3.3.10 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10>; a rule with
+  // neither repeats forever.
+  oneof bound {
+    // UNTIL. The last instant an instance may start.
+    google.protobuf.Timestamp until_time = 2;
+
+    // COUNT. How many instances the rule generates.
+    int32 count = 3 [(buf.validate.field).int32.gt = 0];
+  }
+
+  // INTERVAL. How many frequency units between instances. Defaults to 1.
+  int32 interval = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32.gte = 0
+  ];
+
+  // BYSECOND, values 0-60. Second 60 is a leap second.
+  repeated int32 second_numbers = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.int32 = {
+      gte: 0
+      lte: 60
+    }
+  ];
+
+  // BYMINUTE, values 0-59.
+  repeated int32 minute_numbers = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.int32 = {
+      gte: 0
+      lte: 59
+    }
+  ];
+
+  // BYHOUR, values 0-23.
+  repeated int32 hour_numbers = 7 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.int32 = {
+      gte: 0
+      lte: 23
+    }
+  ];
+
+  // BYDAY.
+  repeated WeekdayNum weekdays = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // BYMONTHDAY, values 1-31 or -31 to -1 counting from the month's end.
+  repeated int32 month_days = 9 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.int32 = {
+      gte: -31
+      lte: 31
+    }
+  ];
+
+  // BYYEARDAY, values 1-366 or -366 to -1 counting from the year's end.
+  repeated int32 year_days = 10 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.int32 = {
+      gte: -366
+      lte: 366
+    }
+  ];
+
+  // BYWEEKNO, values 1-53 or -53 to -1. Only meaningful when frequency is
+  // FREQUENCY_YEARLY.
+  repeated int32 week_numbers = 11 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.int32 = {
+      gte: -53
+      lte: 53
+    }
+  ];
+
+  // BYMONTH, values 1-12.
+  repeated int32 months = 12 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.int32 = {
+      gte: 1
+      lte: 12
+    }
+  ];
+
+  // BYSETPOS, values 1-366 or -366 to -1. Selects from the set an expanded
+  // rule produces -- "the last weekday of the month" is BYDAY=MO,TU,WE,TH,FR
+  // with BYSETPOS=-1.
+  repeated int32 set_positions = 13 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.int32 = {
+      gte: -366
+      lte: 366
+    }
+  ];
+
+  // WKST. Which day starts the week, affecting how BYWEEKNO and a WEEKLY
+  // INTERVAL are counted. Defaults to Monday per section 3.3.10 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.10>.
+  Weekday week_start = 14 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+}

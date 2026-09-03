@@ -1,0 +1,132 @@
+syntax = "proto3";
+
+package protobuf.shared.interchange.v1;
+
+import "google/api/annotations.proto";
+import "google/longrunning/operations.proto";
+import "protobuf/shared/interchange/v1/messages.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.interchange.v1";
+
+// Interchange moves resources across the wire boundary in their native
+// standardised formats.
+//
+// Native: no RFC specifies this service. It exists because the alternative is
+// an Export and an Import method on every resource service, each identical
+// apart from the type it names, and each a place for the two directions to
+// drift apart.
+//
+// **What makes it generic**
+//
+// `resource_type` is the string a resource already declares in its
+// `google.api.resource` annotation -- "protobufrfc.dev/User". A resource becomes
+// exportable by declaring that and having a codec registered, not by growing
+// methods of its own, so AIP-131..135 services stay at the standard methods.
+//
+// Codecs register against a `(resource_type, media_type)` pair. "text/vcard"
+// means something for protobufrfc.dev/User and nothing for protobufrfc.dev/Group,
+// so an unsupported pair is the common client error, not an edge case.
+//
+// **Long-running operations**
+//
+// Both methods return `google.longrunning.Operation` (AIP-151). Neither
+// direction bounds how much data it moves, and a unary call that works in
+// development and times out in production is not a contract worth
+// publishing.
+//
+// The operation is polled through the standard `google.longrunning.Operations`
+// service, which a host must also expose:
+//
+//   GET  /v1/{name=operations/**}          Operations.GetOperation
+//   POST /v1/{name=operations/**}:cancel   Operations.CancelOperation
+//
+// While running, `Operation.metadata` holds progress; on success
+// `Operation.response` holds the response message below. `Operation.done`
+// false with no error means still working -- poll with backoff, do not
+// re-issue the request, which would start a second export.
+//
+// **Errors**
+//
+// Both methods return these, in addition to the standard transport codes:
+//
+//   INVALID_ARGUMENT   malformed resource_type or media_type
+//   NOT_FOUND          resource_type names no declared resource
+//   UNIMPLEMENTED      no codec for this (resource_type, media_type) pair
+//   PERMISSION_DENIED  caller may not read (export) or write (import) the
+//                      resources named
+//
+// Errors surface on the operation, not the initial call, once the operation
+// has been created -- an unsupported pair is detected before creation and
+// fails the RPC directly.
+service Interchange {
+  // Serializes resources of one type into a payload of the requested media
+  // type and returns where to fetch it.
+  //
+  //   POST /v1:exportResources
+  //   body: the whole request message
+  //
+  // A custom method on no resource, so AIP-136 puts the verb at the root
+  // rather than under a collection. Returns an Operation whose response is
+  // `ExportResourcesResponse`, carrying `output_uri` rather than inline bytes.
+  //
+  // Not idempotent in the sense that matters: re-issuing produces a second
+  // export of possibly-changed data. Poll the first operation instead.
+  rpc ExportResources(ExportResourcesRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1:exportResources"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "ExportResourcesResponse"
+      metadata_type: "ExportResourcesMetadata"
+    };
+  }
+
+  // Parses a payload and upserts the resources it contains.
+  //
+  //   POST /v1:importResources
+  //   body: the whole request message
+  //
+  // Partial success is the normal outcome: entries that fail to parse or
+  // validate are reported in `ImportResourcesResponse.failures` with their
+  // index, and the rest are written. One malformed card in a thousand does
+  // not reject the file.
+  //
+  // Set `validate_only` to parse and report without writing (AIP-163). Run
+  // that first on any payload from an unfamiliar producer -- it is the only
+  // way to see the failures before they are half-applied.
+  //
+  // Idempotent by identity, not by call: an entry carrying an interchange uid
+  // that already exists updates that resource rather than creating a second.
+  // A payload whose entries have no such uid will duplicate on re-import.
+  rpc ImportResources(ImportResourcesRequest) returns (google.longrunning.Operation) {
+    option (google.api.http) = {
+      post: "/v1:importResources"
+      body: "*"
+    };
+    option (google.longrunning.operation_info) = {
+      response_type: "ImportResourcesResponse"
+      metadata_type: "ImportResourcesMetadata"
+    };
+  }
+
+  // Lists the (resource_type, media_type) pairs this service can move.
+  //
+  //   GET /v1/codecs
+  //
+  // The discovery half of the registry. A client that wants to offer "export
+  // as..." needs to know that text/vcard applies to protobufrfc.dev/User and
+  // nothing else, and guessing from the resource type is not possible -- the
+  // pairing is a deployment fact, not a property of either string.
+  //
+  // Unpaginated and safe. The result changes only when the service is
+  // redeployed with different codecs registered, so it is cacheable for the
+  // lifetime of a connection.
+  //
+  //   INVALID_ARGUMENT   malformed resource_type
+  rpc ListCodecs(ListCodecsRequest) returns (ListCodecsResponse) {
+    option (google.api.http) = {get: "/v1/codecs"};
+  }
+}

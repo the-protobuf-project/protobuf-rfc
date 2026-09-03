@@ -1,0 +1,110 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.calendar.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "CalendarProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.calendar.v1";
+
+// Calendar is the iCalendar object, RFC 5545 section 3.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.4>.
+//
+// The collection an Event belongs to. Event's resource name is
+// "calendars/{calendar}/events/{event}", so this is the parent that name
+// refers to; without it every event would live under a collection nothing
+// could create or delete.
+//
+// PRODID (section 3.7.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.7.3>) and VERSION (section 3.7.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.7.4>) are deliberately absent.
+// Both describe the iCalendar *stream* rather than the calendar -- which
+// product wrote the file, and which version of the format it used -- so they
+// belong to the codec that produces the stream, not to a stored resource.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.4.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.4
+message Calendar {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/Calendar"
+    pattern: "calendars/{calendar}"
+    singular: "calendar"
+    plural: "calendars"
+  };
+
+  // Resource name, "calendars/{calendar}".
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^calendars/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // NAME, RFC 7986 section 5.1 <https://www.rfc-editor.org/rfc/rfc7986.html#section-5.1>. RFC 5545 gives the calendar object no
+  // human-readable name at all; 7986 added one because every client needed
+  // to label a calendar in a list.
+  //
+  // REQUIRED here is ours, not the RFC's: 7986 makes NAME optional, but a
+  // calendar with no label is unusable in any list UI, so this API insists.
+  string display_name = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // DESCRIPTION, RFC 7986 section 5.2 <https://www.rfc-editor.org/rfc/rfc7986.html#section-5.2>.
+  string description = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // CALSCALE, section 3.7.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.7.1>.
+  CalendarScale scale = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // Default IANA time zone for events that do not carry their own, e.g.
+  // "Europe/London". Native: section 3.6.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.5> answers this with an embedded
+  // VTIMEZONE component, which restates a database IANA already publishes.
+  string time_zone = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^[A-Za-z_]+(/[A-Za-z0-9_+-]+)*$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. Pass it back in an
+  // update or delete to make the write conditional: if the resource changed
+  // since it was read, the request fails instead of overwriting.
+  string etag = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the calendar was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp delete_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted calendar is purged for good. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp expire_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the calendar was created.
+  google.protobuf.Timestamp create_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the calendar was last modified.
+  google.protobuf.Timestamp update_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// CalendarScale is the CALSCALE property, RFC 5545 section 3.7.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.7.1>.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.7.1.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.7.1
+enum CalendarScale {
+  // Not specified; treat as CALENDAR_SCALE_GREGORIAN, the default and the
+  // only scale section 3.7.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.7.1> defines.
+  CALENDAR_SCALE_UNSPECIFIED = 0;
+
+  // GREGORIAN.
+  CALENDAR_SCALE_GREGORIAN = 1;
+}

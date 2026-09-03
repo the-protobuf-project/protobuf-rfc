@@ -1,0 +1,76 @@
+syntax = "proto3";
+
+package protobuf.rfc4519.organization.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OrganizationProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc4519.organization.v1";
+
+// Organization is the LDAP 'organization' object class, RFC 4519 section 3.8 <https://www.rfc-editor.org/rfc/rfc4519.html#section-3.8>.
+//
+// Attributes are repeated because LDAP attribute types are multi-valued by
+// default. Section 3.8 lists twenty-one optional attributes; the four here
+// are the ones that carry meaning outside a directory server.
+//
+// Reference: RFC 4519 "LDAP: Schema for User Applications", section 3.8.
+// https://www.rfc-editor.org/rfc/rfc4519.html#section-3.8
+message Organization {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/Organization"
+    pattern: "organizations/{organization}"
+    singular: "organization"
+    plural: "organizations"
+  };
+
+  // Resource name, "organizations/{organization}".
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^organizations/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // 'o', section 2.19 <https://www.rfc-editor.org/rfc/rfc4519.html#section-2.19>. The only attribute section 3.8 <https://www.rfc-editor.org/rfc/rfc4519.html#section-3.8> makes mandatory.
+  repeated string display_names = 3 [(google.api.field_behavior) = REQUIRED];
+
+  // 'description', section 2.5 <https://www.rfc-editor.org/rfc/rfc4519.html#section-2.5>.
+  repeated string descriptions = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // 'businessCategory', section 2.1 <https://www.rfc-editor.org/rfc/rfc4519.html#section-2.1>.
+  repeated string business_categories = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // 'seeAlso', section 2.30 <https://www.rfc-editor.org/rfc/rfc4519.html#section-2.30>. Distinguished names of related entries, kept as
+  // opaque strings: an LDAP DN is not a resource name and does not resolve
+  // through this API.
+  repeated string see_also = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // When the organization was created.
+  google.protobuf.Timestamp create_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the organization was last modified.
+  google.protobuf.Timestamp update_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. Pass it back in an
+  // update or delete to make the write conditional: if the resource changed
+  // since it was read, the request fails instead of overwriting.
+  string etag = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When the organization was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp delete_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted organization is purged for good. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp expire_time = 11 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

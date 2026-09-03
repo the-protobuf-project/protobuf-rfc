@@ -1,0 +1,123 @@
+syntax = "proto3";
+
+package protobuf.rfc4519.membership.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/protobuf/empty.proto";
+import "protobuf/rfc4519/membership/v1/membership.proto";
+import "protobuf/rfc4519/membership/v1/messages.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc4519.membership.v1";
+
+// Memberships manages presence in a Group, RFC 4519 section 2.17 <https://www.rfc-editor.org/rfc/rfc4519.html#section-2.17>.
+//
+// Deletion is permanent: a membership is already a revocable edge, so a
+// soft-deleted one would be a second way of saying what revoking says.
+service Memberships {
+  // Retrieves one membership.
+  //
+  //   GET /v1/{name=groups/*/memberships/*}
+  //
+  // Safe and idempotent. Returns the resource as stored; no field is computed
+  // per-caller. Read the `etag` here and pass it back on update or delete to
+  // make the write conditional.
+  //
+  //   NOT_FOUND          no such membership
+  //   INVALID_ARGUMENT   name does not match groups/*/memberships/*
+  //   PERMISSION_DENIED  caller may not read it
+  rpc GetMembership(GetMembershipRequest) returns (Membership) {
+    option (google.api.http) = {get: "/v1/{name=groups/*/memberships/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists memberships.
+  //
+  //   GET /v1/{parent=groups/*}/memberships
+  //
+  // Paginated per AIP-158: pass `page_size` (defaults to 50, capped at 1000)
+  // and the `next_page_token` from the previous response. An empty
+  // `next_page_token` means the last page. Page tokens are opaque and may
+  // expire; do not construct or store them.
+  //
+  // Filtering uses the AIP-160 expression language over the resource's own
+  // fields. Results carry no guaranteed order.
+  //
+  // Scoped to one group through `parent`; there is no cross-group listing.
+  // Filtering on `role` is the common case.
+  //
+  //   INVALID_ARGUMENT   malformed filter, or page_size out of range
+  //   PERMISSION_DENIED  caller may not list this collection
+  rpc ListMemberships(ListMembershipsRequest) returns (ListMembershipsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=groups/*}/memberships"};
+    option (google.api.method_signature) = "parent";
+  }
+
+  // Creates a membership.
+  //
+  //   POST /v1/{parent=groups/*}/memberships
+  //   body: the membership itself
+  //
+  // Server-assigned fields on the request body are ignored: `name`, `uid`,
+  // `etag` and the timestamps are set by the server regardless of what is
+  // sent. Supply `membership_id` to choose the final path segment; leave it empty
+  // and the server generates one.
+  //
+  // Not idempotent. Retrying after a timeout may create a second membership;
+  // supply `membership_id` if the caller needs retry safety.
+  //
+  //   ALREADY_EXISTS     that membership_id is taken
+  //   INVALID_ARGUMENT   a field violates its buf.validate constraint
+  //   PERMISSION_DENIED  caller may not create here
+  rpc CreateMembership(CreateMembershipRequest) returns (Membership) {
+    option (google.api.http) = {
+      post: "/v1/{parent=groups/*}/memberships"
+      body: "membership"
+    };
+    option (google.api.method_signature) = "parent,membership,membership_id";
+  }
+
+  // Updates a membership.
+  //
+  //   PATCH /v1/{membership.name=groups/*/memberships/*}
+  //   body: the membership itself
+  //
+  // A partial update: only fields named in `update_mask` are written. An
+  // empty mask writes every mutable field, which will clear anything the
+  // caller left unset -- pass a mask unless that is the intent. OUTPUT_ONLY
+  // and IMMUTABLE fields are rejected rather than silently dropped.
+  //
+  // Idempotent. Pass the `etag` read from Get to make the write conditional.
+  //
+  //   NOT_FOUND          no such membership
+  //   ABORTED            etag does not match the stored resource
+  //   INVALID_ARGUMENT   mask names an unknown or immutable field
+  //   PERMISSION_DENIED  caller may not modify it
+  rpc UpdateMembership(UpdateMembershipRequest) returns (Membership) {
+    option (google.api.http) = {
+      patch: "/v1/{membership.name=groups/*/memberships/*}"
+      body: "membership"
+    };
+    option (google.api.method_signature) = "membership,update_mask";
+  }
+
+  // Deletes a membership.
+  //
+  //   DELETE /v1/{name=groups/*/memberships/*}
+  //
+  // Permanent. A membership is already a revocable edge, so there is nothing a
+  // soft delete would add.
+  //
+  // Idempotent in effect but not in reporting: a second delete returns
+  // NOT_FOUND rather than succeeding silently.
+  //
+  //   NOT_FOUND          no such membership
+  //   ABORTED            etag does not match
+  //   PERMISSION_DENIED  caller may not delete it
+  rpc DeleteMembership(DeleteMembershipRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=groups/*/memberships/*}"};
+    option (google.api.method_signature) = "name";
+  }
+}

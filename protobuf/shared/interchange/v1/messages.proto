@@ -1,0 +1,189 @@
+syntax = "proto3";
+
+package protobuf.shared.interchange.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.interchange.v1";
+
+// Request message for Interchange.ExportResources.
+message ExportResourcesRequest {
+  // Resource type to export, exactly as declared in that resource's
+  // google.api.resource annotation -- e.g. "protobufrfc.dev/User". This is the
+  // dynamic part: the set of exportable things is the set of declared
+  // resource types, so a new resource becomes exportable by existing, not by
+  // gaining an Export method of its own.
+  string resource_type = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.pattern = "^[a-z0-9.]+/[A-Za-z]+$"
+  ];
+
+  // Collection to export from, e.g. "users" or "groups/g1/memberships".
+  // Empty exports every collection of resource_type.
+  string parent = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Specific resource names to export. Empty exports everything under parent
+  // that survives filter.
+  repeated string names = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160 <https://aip.dev/160>. Applied only when names is empty.
+  string filter = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // RFC 6838 media type selecting the codec, e.g. "text/vcard" or
+  // "application/vcard+json".
+  //
+  // Codecs register against a (resource_type, media_type) pair, so this is
+  // where the request can fail as unsupported: "text/vcard" means something
+  // for protobufrfc.dev/User and nothing for protobufrfc.dev/Group.
+  string media_type = 5 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.pattern = "^[a-z]+/[A-Za-z0-9.+-]+(; *.+)?$"
+  ];
+}
+
+// Response message for Interchange.ExportResources, delivered through the
+// operation returned by the method.
+message ExportResourcesResponse {
+  // Where to fetch the serialized payload.
+  //
+  // A URI, not inline bytes. A hundred-thousand-contact export fits in
+  // neither a unary response nor a request timeout, and a field that works
+  // for ten resources and fails for ten thousand is worse than one that
+  // always requires a fetch.
+  string output_uri = 1;
+
+  // The media type actually produced, including resolved parameters, so a
+  // caller that asked for "text/vcard" learns which charset it received --
+  // e.g. "text/vcard; charset=utf-8".
+  string media_type = 2;
+
+  // How many resources the payload contains.
+  int32 resource_count = 3;
+}
+
+// Progress of a running ExportResources operation.
+message ExportResourcesMetadata {
+  // When the export started.
+  google.protobuf.Timestamp create_time = 1;
+
+  // When the export finished, unset while it is still running.
+  google.protobuf.Timestamp end_time = 2;
+
+  // Resources serialized so far.
+  int32 resources_exported = 3;
+
+  // Resources the export expects to serialize, zero while still counting.
+  int32 resources_total = 4;
+}
+
+// Request message for Interchange.ImportResources.
+message ImportResourcesRequest {
+  // Resource type the payload contains, e.g. "protobufrfc.dev/User".
+  string resource_type = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.pattern = "^[a-z0-9.]+/[A-Za-z]+$"
+  ];
+
+  // Collection to import into, e.g. "users".
+  string parent = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // The payload to parse.
+  bytes payload = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).bytes.min_len = 1
+  ];
+
+  // RFC 6838 media type of the payload, selecting the codec.
+  string media_type = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.pattern = "^[a-z]+/[A-Za-z0-9.+-]+(; *.+)?$"
+  ];
+
+  // Parse and report without writing, AIP-163 <https://aip.dev/163>.
+  bool validate_only = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Interchange.ImportResources.
+message ImportResourcesResponse {
+  // Names of the resources created or updated.
+  //
+  // Names rather than the resources themselves: a generic importer cannot
+  // name a concrete message type without referencing another proto package,
+  // which AIP-215 <https://aip.dev/215> forbids. Callers that need the full resource read it back
+  // through that resource's own service. This is the real cost of making
+  // interchange generic, and it is paid here rather than by duplicating an
+  // Import method onto every resource.
+  repeated string names = 1;
+
+  // Entries that failed. A partial import reports here rather than failing
+  // the whole call: one malformed entry in a thousand should not reject the
+  // file.
+  repeated ImportFailure failures = 2;
+}
+
+// Progress of a running ImportResources operation.
+message ImportResourcesMetadata {
+  // When the import started.
+  google.protobuf.Timestamp create_time = 1;
+
+  // When the import finished, unset while it is still running.
+  google.protobuf.Timestamp end_time = 2;
+
+  // Entries processed so far, successful or not.
+  int32 entries_processed = 3;
+
+  // Entries the payload contains, zero until parsing determines it.
+  int32 entries_total = 4;
+}
+
+// One entry that failed to parse or validate.
+message ImportFailure {
+  // Zero-based index of the entry within the payload.
+  int32 index = 1;
+
+  // Why the entry was rejected.
+  string description = 2;
+}
+
+// A registered codec: one (resource_type, media_type) pair Interchange can
+// move.
+message Codec {
+  // Resource type the codec handles, e.g. "protobufrfc.dev/User".
+  string resource_type = 1;
+
+  // RFC 6838 media type it reads or writes, e.g. "text/vcard".
+  string media_type = 2;
+
+  // Whether ExportResources accepts this pair.
+  bool can_export = 3;
+
+  // Whether ImportResources accepts this pair.
+  //
+  // Separate from can_export because the two directions are not symmetric: a
+  // format can be parseable long before anyone writes a serialiser for it, and
+  // a single `supported` flag would have to lie about one of them.
+  bool can_import = 4;
+}
+
+// Request message for Interchange.ListCodecs.
+message ListCodecsRequest {
+  // Return only codecs for this resource type. Empty returns all.
+  string resource_type = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^[a-z0-9.]+/[A-Za-z]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+}
+
+// Response message for Interchange.ListCodecs.
+message ListCodecsResponse {
+  // Every registered pair, or those matching the requested resource type.
+  //
+  // Unpaginated: the registry is a fixed table of a few dozen entries decided
+  // at build time, not a collection that grows with data.
+  repeated Codec codecs = 1;
+}

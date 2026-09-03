@@ -1,0 +1,145 @@
+syntax = "proto3";
+
+package protobuf.rfc6350.user.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/protobuf/empty.proto";
+import "protobuf/rfc6350/user/v1/messages.proto";
+import "protobuf/rfc6350/user/v1/user.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+
+// Users manages contacts as addressable resources.
+//
+// RFC 6350 specifies a data format and no access protocol. CardDAV (RFC
+// 6352) is the standards-track answer and is deliberately deferred: it is a
+// sync protocol with its own resource model, and adopting it before Contact
+// and User stabilize would freeze both.
+//
+// These are the AIP-131..135 standard methods and nothing else. Serializing
+// users to a vCard file is not a User-specific concern -- see
+// protobuf.shared.interchange.v1.Interchange, which does it for any resource type.
+service Users {
+  // Retrieves one user.
+  //
+  //   GET /v1/{name=users/*}
+  //
+  // Safe and idempotent. Returns the resource as stored; no field is computed
+  // per-caller. Read the `etag` here and pass it back on update or delete to
+  // make the write conditional.
+  //
+  //   NOT_FOUND          no such user, or it is soft-deleted and `show_deleted` was not set
+  //   INVALID_ARGUMENT   name does not match users/*
+  //   PERMISSION_DENIED  caller may not read it
+  rpc GetUser(GetUserRequest) returns (User) {
+    option (google.api.http) = {get: "/v1/{name=users/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists users.
+  //
+  //   GET /v1/users
+  //
+  // Paginated per AIP-158: pass `page_size` (defaults to 50, capped at 1000)
+  // and the `next_page_token` from the previous response. An empty
+  // `next_page_token` means the last page. Page tokens are opaque and may
+  // expire; do not construct or store them.
+  //
+  // Filtering uses the AIP-160 expression language over the resource's own
+  // fields. Results carry no guaranteed order.
+  //
+  //   INVALID_ARGUMENT   malformed filter, or page_size out of range
+  //   PERMISSION_DENIED  caller may not list this collection
+  rpc ListUsers(ListUsersRequest) returns (ListUsersResponse) {
+    option (google.api.http) = {get: "/v1/users"};
+  }
+
+  // Creates a user.
+  //
+  //   POST /v1/users
+  //   body: the user itself
+  //
+  // Server-assigned fields on the request body are ignored: `name`, `uid`,
+  // `etag` and the timestamps are set by the server regardless of what is
+  // sent. Supply `user_id` to choose the final path segment; leave it empty
+  // and the server generates one.
+  //
+  // Not idempotent. Retrying after a timeout may create a second user;
+  // supply `user_id` if the caller needs retry safety.
+  //
+  //   ALREADY_EXISTS     that user_id is taken
+  //   INVALID_ARGUMENT   a field violates its buf.validate constraint
+  //   PERMISSION_DENIED  caller may not create here
+  rpc CreateUser(CreateUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/users"
+      body: "user"
+    };
+    option (google.api.method_signature) = "user,user_id";
+  }
+
+  // Updates a user.
+  //
+  //   PATCH /v1/{user.name=users/*}
+  //   body: the user itself
+  //
+  // A partial update: only fields named in `update_mask` are written. An
+  // empty mask writes every mutable field, which will clear anything the
+  // caller left unset -- pass a mask unless that is the intent. OUTPUT_ONLY
+  // and IMMUTABLE fields are rejected rather than silently dropped.
+  //
+  // Idempotent. Pass the `etag` read from Get to make the write conditional.
+  //
+  //   NOT_FOUND          no such user
+  //   ABORTED            etag does not match the stored resource
+  //   INVALID_ARGUMENT   mask names an unknown or immutable field
+  //   PERMISSION_DENIED  caller may not modify it
+  rpc UpdateUser(UpdateUserRequest) returns (User) {
+    option (google.api.http) = {
+      patch: "/v1/{user.name=users/*}"
+      body: "user"
+    };
+    option (google.api.method_signature) = "user,update_mask";
+  }
+
+  // Deletes a user.
+  //
+  //   DELETE /v1/{name=users/*}
+  //
+  // Soft delete: the user is marked deleted, disappears from List unless
+  // `show_deleted` is set, and is purged at `expire_time`. Recover it with
+  // Undelete before then.
+  //
+  // Idempotent in effect but not in reporting: a second delete returns
+  // NOT_FOUND rather than succeeding silently.
+  //
+  //   NOT_FOUND          no such user
+  //   ABORTED            etag does not match
+  //   PERMISSION_DENIED  caller may not delete it
+  rpc DeleteUser(DeleteUserRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=users/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Restores a soft-deleted user.
+  //
+  //   POST /v1/{name=users/*}:undelete
+  //
+  // Valid only before `expire_time`; after that the user is gone and this
+  // returns NOT_FOUND. Clears `delete_time` and `expire_time` and returns the
+  // user as it was.
+  //
+  //   NOT_FOUND          no such user, or already purged
+  //   ALREADY_EXISTS     the user is not deleted
+  //   PERMISSION_DENIED  caller may not restore it
+  rpc UndeleteUser(UndeleteUserRequest) returns (User) {
+    option (google.api.http) = {
+      post: "/v1/{name=users/*}:undelete"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}

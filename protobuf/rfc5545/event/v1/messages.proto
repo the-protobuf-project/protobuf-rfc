@@ -1,0 +1,168 @@
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc5545/event/v1/event.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Request message for Events.GetEvent, AIP-131 <https://aip.dev/131>.
+message GetEventRequest {
+  // Name of the event, "calendars/{calendar}/events/{event}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+}
+
+// Request message for Events.ListEvents, AIP-132 <https://aip.dev/132>.
+//
+// Returns stored events, one per recurrence rule -- listing does not expand
+// recurrences. A rule bounded by neither UNTIL nor COUNT generates infinitely
+// many instances, so expansion needs a time window, and that belongs in
+// ExpandEvent where the window is an argument rather than an assumption.
+message ListEventsRequest {
+  // Calendar whose events to list, "calendars/{calendar}". The calendar
+  // itself is managed by protobuf.rfc5545.calendar.v1.Calendars.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).child_type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+$"
+  ];
+
+  // Maximum events to return. Defaults to 50, capped at 1000.
+  int32 page_size = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ListEventsResponse.next_page_token.
+  string page_token = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160 <https://aip.dev/160>.
+  string filter = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include soft-deleted events in the result. AIP-164 <https://aip.dev/164>.
+  bool show_deleted = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Events.ListEvents, AIP-132 <https://aip.dev/132>.
+message ListEventsResponse {
+  // The events on this page.
+  repeated Event events = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+}
+
+// Request message for Events.CreateEvent, AIP-133 <https://aip.dev/133>.
+message CreateEventRequest {
+  // Calendar to create the event in, "calendars/{calendar}".
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).child_type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+$"
+  ];
+
+  // The event to create.
+  Event event = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Client-assigned id, becoming the last segment of the resource name. The
+  // server generates one when empty.
+  string event_id = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Events.UpdateEvent, AIP-134 <https://aip.dev/134>.
+message UpdateEventRequest {
+  // The event to update. Its name field identifies the resource.
+  Event event = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Fields to update. An empty mask updates all mutable fields.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Events.DeleteEvent, AIP-135 <https://aip.dev/135>.
+message DeleteEventRequest {
+  // Name of the event to delete.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+}
+
+// Request message for Events.ExpandEvent, AIP-136 <https://aip.dev/136>.
+message ExpandEventRequest {
+  // The recurring event to expand.
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+
+  // Earliest instance start to return, inclusive.
+  google.protobuf.Timestamp window_start_time = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Latest instance start to return, exclusive.
+  //
+  // Required, not optional. An unbounded rule has infinitely many instances,
+  // so there is no sensible default and a missing bound is a bug the caller
+  // should be told about rather than one the server guesses around.
+  google.protobuf.Timestamp window_end_time = 3 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Maximum instances to return. Defaults to 250, capped at 2500.
+  int32 page_size = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ExpandEventResponse.next_page_token.
+  string page_token = 5 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Events.ExpandEvent.
+message ExpandEventResponse {
+  // The materialised occurrences, with EXDATE exclusions removed and RDATE
+  // additions folded in. Each carries the start and end of one instance;
+  // none is a stored resource, so none has a resource name.
+  repeated Event events = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+}
+
+// Request message for UndeleteEvent, AIP-164 <https://aip.dev/164>.
+message UndeleteEventRequest {
+  // Name of the soft-deleted event to restore, "calendars/{calendar}/events/{event}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/events/[^/]+$"
+  ];
+}
