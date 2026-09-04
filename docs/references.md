@@ -11,7 +11,7 @@ and the BSR module are private, so they resolve only when signed in.
 | What | Where |
 |---|---|
 | Repository | https://github.com/the-protobuf-project/protobuf-rfc |
-| BSR module | https://buf.build/the-protobuf-project/protobuf-rfc |
+| BSR module | https://buf.build/the-protobuf-project/rfc |
 | api-linter action | https://github.com/the-protobuf-project/setup-google-api-linter |
 
 ## API design — the authority when rules conflict
@@ -62,8 +62,8 @@ with a media type, an alternative shape for interchange payloads),
 (the canonical error codes the service comments name), `type/decimal.proto`,
 `type/interval.proto`, `type/localized_text.proto`.
 
-Adopt only where the model matches — see `plan/07-adding-data.md` for the two
-that were rejected and why.
+Adopt only where the model matches — [`adding-data.md`](adding-data.md)
+records which were adopted and which rejected, with reasons.
 
 ## Tooling
 
@@ -82,6 +82,39 @@ that were rejected and why.
 
 Link to a section, never a document: append `#section-<X.Y.Z>` (rule 11).
 
+Which of these is canonical and which is a legacy format is rule 14, in
+[`ontology.md`](ontology.md) — not something to infer from this table.
+
+### Canonical data models
+
+| RFC | What | Where |
+|---|---|---|
+| 9553 | JSContact, the contact model | https://www.rfc-editor.org/rfc/rfc9553.html |
+| 9982 | JSContact 2.0, amends 9553 | https://www.rfc-editor.org/rfc/rfc9982.html |
+| 9555 | JSContact ↔ vCard conversion | https://www.rfc-editor.org/rfc/rfc9555.html |
+| 7643 | SCIM core schema, the identity model | https://www.rfc-editor.org/rfc/rfc7643.html |
+| 9865 | SCIM cursor-based pagination | https://www.rfc-editor.org/rfc/rfc9865.html |
+| 9967 | SCIM security event tokens | https://www.rfc-editor.org/rfc/rfc9967.html |
+| 8984 | JSCalendar — deferred, 2.0 pending | https://www.rfc-editor.org/rfc/rfc8984.html |
+
+### Updates to the legacy models
+
+Tracked so conversion stays lossless; see rule 14.
+
+| RFC | What | Where |
+|---|---|---|
+| 9554 | vCard extensions for JSContact parity | https://www.rfc-editor.org/rfc/rfc9554.html |
+| 6868 | vCard/iCalendar parameter value encoding | https://www.rfc-editor.org/rfc/rfc6868.html |
+| 9073 | Event publishing extensions to iCalendar | https://www.rfc-editor.org/rfc/rfc9073.html |
+| 9074 | VALARM extensions | https://www.rfc-editor.org/rfc/rfc9074.html |
+| 9253 | iCalendar relationships | https://www.rfc-editor.org/rfc/rfc9253.html |
+| 7529 | Non-Gregorian recurrence rules | https://www.rfc-editor.org/rfc/rfc7529.html |
+| 7953 | Calendar availability (VAVAILABILITY) | https://www.rfc-editor.org/rfc/rfc7953.html |
+| 8288 | Web linking, the LINKREL registry | https://www.rfc-editor.org/rfc/rfc8288.html |
+| 6578 | WebDAV collection sync — the `sync-token` CalDAV and CardDAV use | https://www.rfc-editor.org/rfc/rfc6578.html |
+
+### Legacy models and supporting formats
+
 | RFC | What | Where |
 |---|---|---|
 | 6350 | vCard | https://www.rfc-editor.org/rfc/rfc6350.html |
@@ -97,6 +130,7 @@ Link to a section, never a document: append `#section-<X.Y.Z>` (rule 11).
 | 3986 | URI syntax | https://www.rfc-editor.org/rfc/rfc3986.html |
 | 3966 | the `tel` URI | https://www.rfc-editor.org/rfc/rfc3966.html |
 | 5870 | the `geo` URI | https://www.rfc-editor.org/rfc/rfc5870.html |
+| 5646 | language tags (BCP 47) | https://www.rfc-editor.org/rfc/rfc5646.html |
 | 6838 | Media types | https://www.rfc-editor.org/rfc/rfc6838.html |
 | 9562 | UUIDs | https://www.rfc-editor.org/rfc/rfc9562.html |
 

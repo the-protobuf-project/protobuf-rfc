@@ -28,6 +28,14 @@ The recurring ones: AIP-122 bans the `_name` suffix (only `display_name`,
 AIP-216 reserves `state` and `status`; and a field called `name` makes
 api-linter treat the message as a resource.
 
+Resource **patterns** trap differently, and rule 14 leans on this. AIP-123
+ties the resource type to its message name and the pattern's segments to the
+declared `singular` and `plural`, so renaming a resource moves four things at
+once. No segment may be a literal — `groups/6350/{group}` fails
+`resource-name-components-alternate` — and a singular containing digits loses
+the underscore in its id segment, `rfc6350User` wanting `{rfc6350user}`. Both
+were found by running the linter, not by reading it.
+
 ## 11. Every RFC citation carries its link
 
 These comments become the generated documentation in every target language,
