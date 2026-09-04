@@ -103,8 +103,8 @@ Nothing here is blocked. Each waits on a consumer that needs it typed.
 | `CATEGORIES` §3.8.1.2 on `Event`/`Todo`/`Journal` | 5545 | vCard's is done, flat on `Contact`; iCalendar's is still queued |
 | `GEO` §3.8.1.6 on `Todo` | 5545 | permitted on VTODO too; typed on `Event` only so far |
 | `ATTACH` §3.8.1.1 | 5545 | large; wants a sub-resource, not a field |
-| `PHOTO` §6.2.4, `KEY` §6.8.1 | 6350 | large; inline base64 would bloat every `ListVcards` page. Architecture already decided -- an `Avatar`/credential sub-resource, not a field -- see `plan/00-sequence.md`'s "Deliberately not planned" |
-| `RRULE` on `Todo` | 5545 | recurring todos; forces the duplication tax in `plan/00-sequence.md` |
+| `PHOTO` §6.2.4, `KEY` §6.8.1 | 6350 | large; inline base64 would bloat every `ListVcards` page. Architecture already decided -- an `Avatar`/credential sub-resource, not a field -- see `decisions.md`'s "Deliberately not planned" |
+| `RRULE` on `Todo` | 5545 | recurring todos; forces the duplication tax in `decisions.md` |
 | `ATTENDEE` on `Todo`/`Journal` | 5545 | same duplication cost |
 | `SOURCE` §6.1.3, `GENDER` §6.2.7, GEO parameters, `LOGO` §6.6.3, `SOUND` §6.7.5, `CLIENTPIDMAP` §6.7.7, `FBURL` §6.9.1, `CALADRURI` §6.9.2, `CALURI` §6.9.3 | 6350 | no consumer has asked; `PRODID`/`REV` are arguably already covered -- `REV` is `update_time`, `PRODID` describes the exporter, not the contact |
 | `telephoneNumber` §2.35, `l` §2.16, `st` §2.33, `street` §2.34, `postalCode` §2.24 | 4519 | on `Organization` and `OrganizationalUnit`; together they restate `Contact.Address` from `rfc6350/v1`, which rule 4 forbids sharing, so add only when actually needed |
@@ -113,7 +113,7 @@ Nothing here is blocked. Each waits on a consumer that needs it typed.
 
 Nothing currently. CalDAV, CardDAV and `OrganizationalUnit` were the last
 three; what remains of RFC 4519 is either in "what is queued" above or in
-`plan/00-sequence.md`'s "Deliberately not planned" (`person`, `country`,
+`decisions.md`'s "Deliberately not planned" (`person`, `country`,
 `locality`, `groupOfUniqueNames`).
 
 All five codecs are built, so a round trip is the acceptance test for

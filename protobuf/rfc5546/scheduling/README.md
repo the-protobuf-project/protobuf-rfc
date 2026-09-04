@@ -168,7 +168,7 @@ Response message for Scheduling.DeclineCounterEvent, matching the RPC name per A
 
 ### CalendarTime
 
-CalendarTime is an iCalendar DATE or DATE-TIME value, RFC 5545 sections 3.3.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.4> and 3.3.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5>.  A copy of the message in protobuf.rfc5545.event.v1, not a reference to it: AIP-215 <https://aip.dev/215> permits no cross-package message reference. This is the fourth package to carry it, after event, todo and journal -- see the AIP-215 duplication tax in plan/00-sequence.md for the alternative, a single rfc5545 package that would remove the copies at the cost of per-resource versioning.  Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.3.5. https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5
+CalendarTime is an iCalendar DATE or DATE-TIME value, RFC 5545 sections 3.3.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.4> and 3.3.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5>.  A copy of the message in protobuf.rfc5545.event.v1, not a reference to it: AIP-215 <https://aip.dev/215> permits no cross-package message reference. This is the fourth package to carry it, after event, todo and journal -- see the AIP-215 duplication tax in docs/decisions.md for the alternative, a single rfc5545 package that would remove the copies at the cost of per-resource versioning.  Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.3.5. https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5
 
 | Field | Type | Behavior | Description |
 | --- | --- | --- | --- |

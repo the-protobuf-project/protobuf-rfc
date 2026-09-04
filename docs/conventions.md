@@ -18,9 +18,9 @@ conflate the two.
 ## 10. AIP naming traps
 
 An RFC's own term for a property is frequently unusable as a field name.
-Rename the field, keep the RFC's name in the comment, and add a row to
-PLAN.md's naming table — which is the full catalogue of collisions hit so
-far, with the resolution for each.
+Rename the field, keep the RFC's name in the comment, and add a row to the
+table at the foot of this file — the full catalogue of collisions hit so far,
+with the resolution for each.
 
 The recurring ones: AIP-122 bans the `_name` suffix (only `display_name`,
 `given_name`, `family_name` survive); AIP-140 bans prepositions, so no
@@ -91,3 +91,31 @@ Two traps:
 
 `Contact` carries nine of RFC 6350's ~forty properties. Add the rest when a
 consumer needs them, not to complete the table.
+
+## The catalogue
+
+RFC vocabulary and AIP rules disagree in six places, resolved as follows.
+
+| RFC property | Field | Why |
+|---|---|---|
+| FN §6.2.1 | `display_names` | AIP-122 bans the `_name` suffix except `display_name`, `given_name`, `family_name` |
+| N §6.2.2 | `name_components` | a field called `name` makes api-linter treat `Contact` as a resource |
+| ORG §6.6.4 | `Organization.value` | same suffix rule; `value` matches `Email.value` |
+| BYDAY, BYHOUR … §3.3.10 | `weekdays`, `hour_numbers` | AIP-140 bans prepositions, so nothing may start `by_` |
+| BYSECOND §3.3.10 | `second_numbers` | a bare `seconds` reads as a timestamp to AIP-142 |
+| STATUS §3.8.1.11 | `Confirmation` | AIP-216 reserves `state` and `status` for server-owned lifecycle |
+| JSContact `name` §2.2.1 | `name_components` | the resource name owns `name`; same rename vCard's N took |
+| JSContact `full` §2.2.1.1 | `Name.display_name` | AIP-122's `_name` allowlist; `full` alone names no thing |
+| JSContact `countryCode` §2.5.1.1 | `region_code` | AIP-143 mandates `region_code` for an ISO 3166-1 value |
+| JSContact `speakToAs` §2.2.4 | `Speech.speech` | AIP-140 bans prepositions, so `speak_to_as` is impossible |
+| JSContact `relatedTo` §2.1.8 | `relations` | same preposition rule |
+| JSContact `prodId` §2.1.7 | `product_id` | AIP-140 requires the `id` abbreviation over `identifier` |
+| JSContact `date` §2.8.1 | `date_value` | AIP-142 reads a bare `date` as a Timestamp field, which it is not |
+| JSContact `utc` §2.8.1 | `utc_time` | AIP-142 requires a Timestamp field to end in `_time` |
+
+Resource names collide too, across lineages rather than within a file. Under
+rule 14 the canonical layer keeps the plain name and the legacy one is named
+for what its own RFC calls the object, so SCIM takes `User`/`users/{user}`
+while vCard's becomes `Vcard`/`vcards/{vcard}` and RFC 4519's group becomes
+`LdapGroup`/`ldapGroups/{ldap_group}`. Table in
+[`ontology.md`](ontology.md).

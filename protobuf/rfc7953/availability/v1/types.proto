@@ -20,7 +20,7 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc7953.availabilit
 // A copy of the type in protobuf.rfc5545.event.v1, not a reference: AIP-215 <https://aip.dev/215>
 // permits no cross-package message reference, so a value type shared between
 // iCalendar components is duplicated per package. That tax is documented in
-// plan/00-sequence.md and paid here for the fifth time.
+// docs/decisions.md and paid here for the fifth time.
 //
 // google.protobuf.Timestamp cannot express what iCalendar needs: section
 // 3.3.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.3.5> gives DATE-TIME a floating form, a UTC form and a TZID form,

@@ -111,7 +111,8 @@ idempotency and error codes.
 ## Contributing
 
 `CLAUDE.md`, `docs/conventions.md` and `docs/ontology.md` hold the working
-rules — fourteen of them, all hard. `PLAN.md` indexes the roadmap in `plan/`.
+rules — fourteen of them, all hard. `docs/decisions.md` records what was
+deliberately not built, and why.
 
 Before opening a PR, run what CI runs:
 
