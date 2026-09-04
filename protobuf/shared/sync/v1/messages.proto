@@ -1,0 +1,106 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.shared.sync.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/shared/sync/v1/change.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.sync.v1";
+
+// Request message for Sync.SyncResources, RFC 6578 section 3.2 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.2>.
+message SyncResourcesRequest {
+  // Resource type to synchronize, e.g. "protobufrfc.dev/Card".
+  //
+  // The string each resource declares in `google.api.resource`, which is what
+  // rule 7 keys a generic service on. Discover the set through
+  // protobuf.shared.interchange.v1.Interchange.ListCodecs, which is keyed the
+  // same way.
+  string resource_type = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Collection to synchronize within, for a resource whose name is nested,
+  // e.g. "calendars/c1" for events. Empty for a top-level collection.
+  string parent = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Opaque token from a previous SyncResourcesResponse.next_sync_token.
+  //
+  // Empty means initial synchronization, and section 3.4 is specific
+  // about what that returns: every member, and no removals. A client with no
+  // prior state has nothing to be told is gone.
+  //
+  // Not a `page_token`. AIP-158's token is a position in a snapshot and pages
+  // through what exists; this is a position in a change history and reports
+  // what moved. The difference is removals, which pagination cannot express.
+  // A caller that wants the current collection should call the resource's own
+  // List method instead.
+  string sync_token = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Maximum changes to return. Defaults to 100, capped at 1000.
+  //
+  // Named `max_changes` rather than `page_size` deliberately: `page_size`
+  // brings AIP-158's pagination contract with it, including a `page_token`
+  // that would be a second cursor beside `sync_token`. Section 3.6 makes the
+  // sync token the cursor, so there is only one.
+  //
+  // Section 3.6 lets a server truncate regardless, so a caller must handle a
+  // short page whatever it asks for.
+  int32 max_changes = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+}
+
+// Response message for Sync.SyncResources, RFC 6578 section 3.2 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.2>.
+message SyncResourcesResponse {
+  // The changes since the request's token, section 3.5 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5>.
+  //
+  // A resource that changed several times appears once: the client re-fetches
+  // current state, so intermediate values are not useful and section 3.5 does
+  // not report them.
+  repeated Change changes = 1;
+
+  // Token to pass to the next call.
+  //
+  // Always set, including when `changes` is empty -- an empty response with a
+  // fresh token is how a caller learns it is up to date, and discarding the
+  // token would force a full resynchronization next time.
+  //
+  // Section 3.6: when a response is truncated this token represents the
+  // partial state, so passing it back continues through the remaining changes
+  // rather than repeating them. That makes the token do double duty as a
+  // paging cursor, which is why there is no separate `next_page_token`.
+  string next_sync_token = 2;
+
+  // Whether more changes are waiting, section 3.6 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.6>.
+  //
+  // A caller draining a backlog should keep calling while this is true rather
+  // than waiting for the next notification, and should not infer "done" from
+  // a short page: a server may truncate below the requested size.
+  bool has_more = 3;
+
+  // Whether the request's token was rejected and this response is a fresh
+  // initial synchronization, section 3.2 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.2>.
+  //
+  // A server may invalidate tokens -- section 3.2 names limited change
+  // history as the reason, and requires it happen "only when absolutely
+  // necessary". When it does, `changes` holds every member as if the token
+  // had been empty, and **a client MUST discard local state it believed was
+  // current** rather than merging, because removals it missed are not in this
+  // response.
+  //
+  // A field rather than an error: the caller gets the data it needs in the
+  // same round trip, where FAILED_PRECONDITION would make it ask twice for
+  // something the server already knew it had to send.
+  bool token_expired = 4;
+}

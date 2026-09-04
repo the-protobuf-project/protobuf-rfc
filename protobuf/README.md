@@ -25,7 +25,9 @@ Every protobuf module under `protobuf/`. Each row links to that module's generat
 | Card | `protobuf.rfc9553.card.v1` | 1 | 34 | 16 | [README](rfc9553/card/README.md) |
 | Interchange | `protobuf.shared.interchange.v1` | 1 | 10 | 0 | [README](shared/interchange/README.md) |
 | Project | `protobuf.shared.project.v1` | 1 | 8 | 1 | [README](shared/project/README.md) |
-| **Total** | _16 modules_ | 17 | 217 | 43 | |
+| Search | `protobuf.shared.search.v1` | 1 | 3 | 0 | [README](shared/search/README.md) |
+| Sync | `protobuf.shared.sync.v1` | 1 | 3 | 1 | [README](shared/sync/README.md) |
+| **Total** | _18 modules_ | 19 | 223 | 44 | |
 
 ## Dependency graph
 
@@ -49,6 +51,8 @@ graph LR
     protobuf_rfc9553_card_v1["Card<br/>protobuf.rfc9553.card.v1"]
     protobuf_shared_interchange_v1["Interchange<br/>protobuf.shared.interchange.v1"]
     protobuf_shared_project_v1["Project<br/>protobuf.shared.project.v1"]
+    protobuf_shared_search_v1["Search<br/>protobuf.shared.search.v1"]
+    protobuf_shared_sync_v1["Sync<br/>protobuf.shared.sync.v1"]
     %% no local cross-module imports
 ```
 

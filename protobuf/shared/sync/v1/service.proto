@@ -1,0 +1,87 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.shared.sync.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "protobuf/shared/sync/v1/messages.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.sync.v1";
+
+// Sync reports what changed in a collection since a caller last asked.
+//
+// One generic service keyed on `resource_type`, per rule 7: synchronization
+// applies to resources in general, so it is not a method added to each of the
+// fourteen resource services. `Interchange` is the same shape for the same
+// reason.
+//
+// What this follows, and what it is not.
+//
+// The model is RFC 6578 <https://www.rfc-editor.org/rfc/rfc6578.html>: an
+// opaque token marks a position in a change history, the client returns it,
+// and the server reports the members that moved. CalDAV and CardDAV both use
+// it, so a consumer bridging either protocol onto this schema meets a
+// mechanism it already implements.
+//
+// This is not a WebDAV implementation. RFC 6578 defines an XML REPORT
+// over HTTP with `DAV:sync-token`, `DAV:sync-level` and a 507 status; this is
+// an AIP-shaped RPC that borrows the mechanism. Where the two differ the
+// comments say which choice was made and why. `sync-level` in particular has
+// no equivalent: WebDAV collections nest arbitrarily and these do not, so
+// depth is answered by `parent` instead.
+//
+// Why not streaming.
+//
+// A change feed invites a server-streaming RPC, and this is deliberately
+// unary. A poll returning a token is resumable across a dropped connection, a
+// restarted process and a client that was offline for a week; a stream is
+// none of those without rebuilding exactly this token underneath it. The
+// intended shape is a notification transport -- a message bus, a webhook,
+// anything that says "something moved" -- waking a client that then calls
+// this to find out what. That keeps delivery and state in separate pieces,
+// and only one of them has to be durable.
+//
+// What it does not do.
+//
+// Conflict resolution. Two clients writing the same resource is settled by
+// `etag` and AIP-154's conditional update, which every resource already
+// carries; this service reports what happened and takes no position on what
+// should have. Nor does it carry resource bodies -- see Change.
+service Sync {
+  // Reports the changes to one resource type since the caller's token.
+  //
+  //   POST /v1/sync:syncResources
+  //   body: the request itself
+  //
+  // POST rather than GET despite being a read: the request carries a token
+  // that may be long and a resource type containing a slash, and AIP-136
+  // takes a body for a custom method rather than encoding that in a query
+  // string.
+  //
+  // Safe and idempotent for a given token: calling twice with the same token
+  // returns the same changes, because a token names a position rather than
+  // consuming one. That is what makes a retry after a dropped response safe.
+  //
+  // An empty `sync_token` performs an initial synchronization, returning
+  // every member and no removals (RFC 6578 section 3.4 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.4>). Expect that
+  // to be large, and expect `has_more`.
+  //
+  //   INVALID_ARGUMENT   unknown resource_type, malformed parent, or page_size out of range
+  //   PERMISSION_DENIED  caller may not synchronize this collection
+  //
+  // Note what is absent: an expired token is not an error. It returns a
+  // full synchronization with `token_expired` set, because the caller needs
+  // that data either way -- see SyncResourcesResponse.token_expired.
+  rpc SyncResources(SyncResourcesRequest) returns (SyncResourcesResponse) {
+    option (google.api.http) = {
+      post: "/v1/sync:syncResources"
+      body: "*"
+    };
+    option (google.api.method_signature) = "resource_type,sync_token";
+  }
+}

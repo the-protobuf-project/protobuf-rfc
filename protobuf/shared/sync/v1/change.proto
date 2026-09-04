@@ -1,0 +1,89 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.shared.sync.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ChangeProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.sync.v1";
+
+// Change is one resource whose state moved, RFC 6578 sections 3.5.1 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5.1> and
+// 3.5.2 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5.2>.
+//
+// It carries a resource **name**, not the resource. Rule 4 permits no
+// cross-package message reference, so a generic service cannot name
+// `protobuf.rfc9553.card.v1.Card` -- and section 3.5.1's own model is a list
+// of member URLs rather than their bodies, so following the RFC and following
+// rule 4 point the same way here. A client re-fetches what it cares about.
+//
+// Reference: RFC 6578 "Collection Synchronization for WebDAV", section 3.5.
+// https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5
+message Change {
+  // Resource name, e.g. "cards/2f1a" or "calendars/c1/events/e9".
+  //
+  // Named `resource` and not `name`: a field called `name` makes api-linter
+  // read the enclosing message as a resource and demand a
+  // `google.api.resource` annotation, which a change record is not. Rule 10;
+  // the vCard package renamed N for the same reason.
+  string resource = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // What happened to it.
+  ChangeKind kind = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // The resource's `etag` as of this change, for a caller that wants to skip
+  // re-fetching something it already holds. Empty for a removal.
+  //
+  // Section 3.5.1 makes an etag change the definition of "changed", so this
+  // is the value the decision was made on rather than a convenience.
+  string etag = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // When the change was recorded, for display and debugging. Not a cursor:
+  // ordering and resumption are the sync token's job, and a timestamp is the
+  // wrong tool for both -- clocks move backwards and two changes can share a
+  // millisecond.
+  google.protobuf.Timestamp change_time = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// ChangeKind is what happened to a resource, RFC 6578 section 3.5 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5>.
+//
+// Two values, not three. Section 3.5.1 reports a newly created member as
+// *changed*, not as a creation of its own: "A member URL MUST be reported as
+// changed if it has been newly mapped as a member of the target collection".
+// A CREATED value would be this schema inventing a distinction the
+// specification declines to make, and a client that re-fetches on either
+// gains nothing from telling them apart.
+//
+// Reference: RFC 6578 "Collection Synchronization for WebDAV", section 3.5.
+// https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5
+enum ChangeKind {
+  // Not specified. Not a value a server may send.
+  CHANGE_KIND_UNSPECIFIED = 0;
+
+  // The resource was created or modified, section 3.5.1 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5.1>.
+  //
+  // Also covers a resource removed and then recreated under the same name,
+  // which section 3.5.1 requires be reported as changed and not as a removal.
+  CHANGE_KIND_CHANGED = 1;
+
+  // The resource was removed, section 3.5.2 <https://www.rfc-editor.org/rfc/rfc6578.html#section-3.5.2>.
+  //
+  // Soft delete makes this gentler here than in WebDAV: most resources keep a
+  // `delete_time` and stay addressable, so a client can still fetch one to
+  // see why it went. A purge at `expire_time` is the case where it cannot.
+  CHANGE_KIND_REMOVED = 2;
+}

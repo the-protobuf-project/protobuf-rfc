@@ -1,0 +1,110 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.shared.search.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.shared.search.v1";
+
+// Request message for Search.SearchResources.
+message SearchResourcesRequest {
+  // What to look for, as free text.
+  //
+  // Free text and not an AIP-160 <https://aip.dev/160> filter, which is the whole reason this
+  // service exists. A filter names a field and a comparison, so it cannot be
+  // written without knowing which resource type is being searched; a query
+  // spanning Cards, Events and LdapGroups has no common field vocabulary to
+  // filter on. Narrowing by field belongs on each resource's own List method,
+  // which already takes a filter.
+  string query = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Resource types to search, e.g. "protobufrfc.dev/Card". Empty searches
+  // every type the server indexes.
+  //
+  // The string each resource declares in `google.api.resource`, which is what
+  // rule 7 keys a generic service on.
+  repeated string resource_types = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Collection to search within, e.g. "calendars/c1". Empty searches
+  // everywhere the caller may read.
+  string parent = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Maximum results to return. Defaults to 50, capped at 1000.
+  int32 page_size = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous SearchResourcesResponse.next_page_token.
+  //
+  // Pagination here, unlike protobuf.shared.sync.v1, is AIP-158 <https://aip.dev/158>'s: a
+  // position in one result set. A search is a snapshot of an index, so there
+  // is nothing to resume against and no removals to report.
+  string page_token = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include soft-deleted resources. AIP-164 <https://aip.dev/164>.
+  bool show_deleted = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Search.SearchResources.
+message SearchResourcesResponse {
+  // The matches on this page, most relevant first.
+  repeated SearchResult results = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+
+  // Total matches across all pages, or zero when the server does not count.
+  //
+  // Zero is ambiguous between "no matches" and "not counted", and
+  // deliberately so: `results` already answers the first question on the
+  // first page, and an index that can rank cheaply often cannot count
+  // cheaply. A caller needing an exact total should not read it from here.
+  int32 total_size = 3;
+}
+
+// SearchResult is one match.
+//
+// It carries a resource **name**, not the resource: rule 4 permits no
+// cross-package message reference, so a generic service cannot name
+// `protobuf.rfc9553.card.v1.Card`. The caller re-fetches what it wants to
+// display, which also sidesteps an index serving a stale copy of a resource
+// that has since changed.
+message SearchResult {
+  // Resource name, e.g. "cards/2f1a".
+  //
+  // Named `resource` and not `name`: a field called `name` makes api-linter
+  // read the enclosing message as a resource and demand a
+  // `google.api.resource` annotation, which a search hit is not. Rule 10.
+  string resource = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // The matched resource's type, e.g. "protobufrfc.dev/Card". Present so a
+  // caller can route the re-fetch without parsing the name.
+  string resource_type = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Relevance, higher is better.
+  //
+  // Comparable only within one response. Scores from different queries, or
+  // from the same query against a re-indexed corpus, mean nothing next to
+  // each other, and nothing here defines a scale.
+  double score = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // A fragment of the matching text, for display. May be empty, and carries
+  // no markup: highlighting is the caller's to apply.
+  string snippet = 4 [(google.api.field_behavior) = OPTIONAL];
+}
