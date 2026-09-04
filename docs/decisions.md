@@ -41,22 +41,20 @@ marked DONE, which is the convention those files themselves set.
 - **VTIMEZONE (§3.6.5).** Modelling a timezone database in protobuf when IANA
   publishes one, and `google.type.TimeZone` already carries the id and the
   tzdata version.
-- **calendar-multiget, RFC 4791 §7.9.** Batch-fetching events by name is
-  repeated `GetEvent` calls today. An AIP-231 `BatchGetEvents` would need its
-  own `service` block -- protobuf forbids reopening `Events` across files, and
-  `event/v1/service.proto` has no line budget left for one more RPC -- for a
-  capability with no consumer asking for the round-trip savings yet.
-- **Per-calendar CalDAV limits, RFC 4791 §5.2** (`max-resource-size`,
-  `min`/`max-date-time`, `max-instances`, `max-attendees-per-instance`,
-  `supported-calendar-component-set`). Server capability/configuration data,
-  not calendar content. Add to `Calendar` the way NAME/DESCRIPTION were added
-  from RFC 7986 when a consumer needs to configure one.
+- **CalDAV capability negotiation, RFC 4791 §5.2.3-4**
+  (`supported-calendar-component-set`, `supported-calendar-data`). What a
+  collection *accepts*, as opposed to the limits it enforces. A resource
+  calendar takes VEVENT and nothing else, which an adapter answers statically,
+  so neither has earned a field. The four limits from §5.2.5-9 are built, on
+  `Calendar` as `max_resource_size`, `min_date_time`, `max_date_time`,
+  `max_instances` and `max_attendees_per_instance`.
 - **WebDAV ACL and `CALDAV:read-free-busy`, RFC 3744 / RFC 4791 §6.1.** A
   generic permissions framework, not calendar data, and RFC 3744 is not in
   this schema's RFC list.
-- **addressbook-multiget, RFC 6352 §8.7.** The same deferral as
-  calendar-multiget, for the same reason: repeated `GetVcard` today, a batch
-  method once a consumer needs the round-trip savings.
+- **addressbook-multiget, RFC 6352 §8.7.** Repeated `GetVcard` today. Its
+  calendar twin, `calendar-multiget` §7.9, has since been built as
+  `Events.BatchGetEvents` because a CalDAV consumer needed the round trips;
+  no consumer has asked the same of the address book, so this one waits.
 - **PHOTO (§6.2.4) and KEY (§6.8.1) as fields.** Both are URI-valued, no
   different in shape from `Url` or `Geo` -- the risk is a `data:` URI
   embedding a full base64 blob inline, bloating every `ListVcards` page.

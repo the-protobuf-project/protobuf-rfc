@@ -136,10 +136,15 @@ Nothing here is blocked. Each waits on a consumer that needs it typed.
 
 ## What still needs building, not just typing
 
-Nothing currently. CalDAV, CardDAV and `OrganizationalUnit` were the last
-three; what remains of RFC 4519 is either in "what is queued" above or in
-`decisions.md`'s "Deliberately not planned" (`person`, `country`,
-`locality`, `groupOfUniqueNames`).
+Nothing currently. `Resource` was the last one -- RFC 9073 §7.3's VRESOURCE,
+promoted from a value object on `Event` to `rfc9073/resource/v1` with full
+CRUD, because a catalogue of bookable things is addressed, listed and deleted
+independently of any booking. That is route 3 above, and the value object on
+`Event` stays: §7.3 serves both uses and neither replaces the other.
+
+Before it, CalDAV, CardDAV and `OrganizationalUnit`; what remains of RFC 4519
+is either in "what is queued" above or in `decisions.md`'s "Deliberately not
+built" (`person`, `country`, `locality`, `groupOfUniqueNames`).
 
 All five codecs are built, so a round trip is the acceptance test for
 everything above rather than a thing to build. What the codecs caught is in
