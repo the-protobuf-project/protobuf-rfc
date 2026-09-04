@@ -1,0 +1,217 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc9553/card/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "CalendaringProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// CalendarResource is one entry of the Card "calendars" property, RFC 9553
+// section 2.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1>.
+//
+// A pointer to the contact's calendar or free/busy feed -- vCard's CALURI and
+// FBURL, RFC 6350 sections 6.9.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.9.3> and 6.9.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.9.1>.
+//
+// Named CalendarResource rather than the RFC's `Calendar`: a bare `Calendar`
+// would collide by name with the actual calendar resource in
+// protobuf.rfc5545.calendar.v1 for anyone reading both, and this is a
+// reference to one rather than a calendar itself. AIP-215 <https://aip.dev/215> forbids pointing
+// at that type directly, so this stays a documented URI -- rule 4.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.4.1.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1
+message CalendarResource {
+  // The URI, section 2.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1>. Mandatory.
+  string uri = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.uri = true
+  ];
+
+  // Whether this is a calendar or a free/busy feed, section 2.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1>.
+  // Mandatory.
+  CalendarKind kind = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // The media type, RFC 6838 <https://www.rfc-editor.org/rfc/rfc6838.html>, section 2.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1>, e.g. "text/calendar".
+  string media_type = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // When this calendar is used, section 2.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1>.
+  repeated Context contexts = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // Preference, section 1.5.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.3>.
+  int32 pref = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+
+  // A human-readable label, section 1.5.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.2>.
+  string label = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// SchedulingAddress is one entry of the Card "schedulingAddresses" property,
+// RFC 9553 section 2.4.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.2>.
+//
+// Where to send scheduling requests -- vCard's CALADRURI, RFC 6350
+// section 6.9.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.9.2>. Section 2.4.2 gives it no `kind` and no
+// `mediaType`, which is why it is a message of its own rather than another
+// resource shape.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.4.2.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.2
+message SchedulingAddress {
+  // The URI, section 2.4.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.2>, e.g. "mailto:jane@example.com".
+  // Mandatory.
+  string uri = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.uri = true
+  ];
+
+  // When this address is used, section 2.4.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.2>.
+  repeated Context contexts = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // Preference, section 1.5.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+
+  // A human-readable label, section 1.5.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.2>.
+  string label = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Relation is one entry of the Card "relatedTo" property, RFC 9553
+// section 2.1.8 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.8>.
+//
+// vCard's RELATED, RFC 6350 section 6.6.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.6>. The map key is the related
+// entity -- a URI or another Card's uid -- and this object says how they are
+// related; an empty `relations` means related in an unstated way, which
+// section 2.1.8 permits explicitly.
+//
+// Group membership is deliberately not modelled through this. Card.members
+// carries it for a KIND_GROUP Card, matching how the vCard package routes
+// MEMBER through protobuf.rfc4519.membership.v1 rather than duplicating
+// affiliation as a second mechanism.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.1.8.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.8
+message Relation {
+  // How the two are related, section 2.1.8 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.8>. JSContact types this as
+  // `String[Boolean]`, a set written as a map, so it is a repeated enum here
+  // for the reason given on Context.
+  repeated RelationType relations = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+}
+
+// CalendarKind is a CalendarResource "kind", RFC 9553 section 2.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.4.1.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1
+enum CalendarKind {
+  // Not specified. Section 2.4.1 makes `kind` mandatory.
+  CALENDAR_KIND_UNSPECIFIED = 0;
+
+  // A calendar. vCard's CALURI.
+  CALENDAR_KIND_CALENDAR = 1;
+
+  // A free/busy feed. vCard's FBURL.
+  CALENDAR_KIND_FREE_BUSY = 2;
+}
+
+// RelationType is a Relation "relation" value, RFC 9553 section 2.1.8 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.8>.
+//
+// The twenty values section 2.1.8 registers, taken from the xCard RELATED
+// type registry.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.1.8.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.8
+enum RelationType {
+  // Not specified. An empty relation set is legal and means "related in some
+  // unstated way".
+  RELATION_TYPE_UNSPECIFIED = 0;
+
+  // An acquaintance.
+  RELATION_TYPE_ACQUAINTANCE = 1;
+
+  // An agent acting for the entity.
+  RELATION_TYPE_AGENT = 2;
+
+  // A child.
+  RELATION_TYPE_CHILD = 3;
+
+  // Someone the entity lives with.
+  RELATION_TYPE_CO_RESIDENT = 4;
+
+  // Someone the entity works with.
+  RELATION_TYPE_CO_WORKER = 5;
+
+  // A colleague.
+  RELATION_TYPE_COLLEAGUE = 6;
+
+  // A contact.
+  RELATION_TYPE_CONTACT = 7;
+
+  // A crush.
+  RELATION_TYPE_CRUSH = 8;
+
+  // A date.
+  RELATION_TYPE_DATE = 9;
+
+  // An emergency contact.
+  RELATION_TYPE_EMERGENCY = 10;
+
+  // A friend.
+  RELATION_TYPE_FRIEND = 11;
+
+  // A relative.
+  RELATION_TYPE_KIN = 12;
+
+  // The entity itself, for a Card describing its own owner.
+  RELATION_TYPE_ME = 13;
+
+  // Someone the entity has met.
+  RELATION_TYPE_MET = 14;
+
+  // A muse.
+  RELATION_TYPE_MUSE = 15;
+
+  // A neighbour.
+  RELATION_TYPE_NEIGHBOR = 16;
+
+  // A parent.
+  RELATION_TYPE_PARENT = 17;
+
+  // A sibling.
+  RELATION_TYPE_SIBLING = 18;
+
+  // A spouse.
+  RELATION_TYPE_SPOUSE = 19;
+
+  // A sweetheart.
+  RELATION_TYPE_SWEETHEART = 20;
+}

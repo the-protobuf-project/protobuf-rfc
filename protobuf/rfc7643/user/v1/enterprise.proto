@@ -1,0 +1,77 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc7643.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "EnterpriseProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc7643.user.v1";
+
+// EnterpriseUser is the Enterprise User schema extension, RFC 7643
+// section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>.
+//
+// Identified in SCIM by the URN
+// "urn:ietf:params:scim:schemas:extension:enterprise:2.0:User". A schema
+// extension in SCIM is a namespaced block of extra attributes on a resource,
+// which is a nested message here -- it has no identity of its own and no
+// lifecycle apart from the User, so rule 8 makes it a value object.
+//
+// Reference: RFC 7643 "System for Cross-domain Identity Management: Core Schema", section 4.3.
+// https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3
+message EnterpriseUser {
+  // SCIM's `employeeNumber`, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>. The organization's own
+  // identifier for this person.
+  string employee_number = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `costCenter`, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>.
+  string cost_center = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `organization`, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>.
+  //
+  // A string, not a reference to protobuf.rfc4519.organization.v1's
+  // Organization: AIP-215 <https://aip.dev/215> permits no cross-package message reference, and
+  // section 4.3 types it as free text rather than as a resource anyway.
+  string organization = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `division`, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>.
+  string division = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `department`, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>.
+  string department = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `manager`, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>.
+  Manager manager = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Manager is the Enterprise User "manager" attribute, RFC 7643
+// section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>.
+//
+// Reference: RFC 7643 "System for Cross-domain Identity Management: Core Schema", section 4.3.
+// https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3
+message Manager {
+  // The manager's SCIM `id`, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>, which is the `uid` of
+  // another User in this collection.
+  //
+  // Not a google.api.resource_reference: that annotation names a resource
+  // *name* ("users/{user}") and section 4.3 types this as the bare id. The
+  // reference is real but the shape is the RFC's, not AIP's.
+  string value = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // A URI resolving to the manager's User resource, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>. SCIM
+  // spells this `$ref`, which is not a legal protobuf field name.
+  string reference_uri = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // The manager's display name, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>. Section 4.3 makes it
+  // read-only: it is a denormalised copy of the manager's own attribute, and
+  // writing it here would let the two disagree.
+  string display_name = 3 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

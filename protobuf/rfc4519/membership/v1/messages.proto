@@ -17,21 +17,21 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc4519.membership.
 
 // Request message for Memberships.GetMembership, AIP-131 <https://aip.dev/131>.
 message GetMembershipRequest {
-  // Name of the membership, "groups/{group}/memberships/{membership}".
+  // Name of the membership, "ldapGroups/{ldap_group}/memberships/{membership}".
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "protobufrfc.dev/Membership",
-    (buf.validate.field).string.pattern = "^groups/[^/]+/memberships/[^/]+$"
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+/memberships/[^/]+$"
   ];
 }
 
 // Request message for Memberships.ListMemberships, AIP-132 <https://aip.dev/132>.
 message ListMembershipsRequest {
-  // Group whose memberships to list, "groups/{group}".
+  // Group whose memberships to list, "ldapGroups/{ldap_group}".
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).child_type = "protobufrfc.dev/Membership",
-    (buf.validate.field).string.pattern = "^groups/[^/]+$"
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+$"
   ];
 
   // Maximum memberships to return. Defaults to 50, capped at 1000.
@@ -61,11 +61,11 @@ message ListMembershipsResponse {
 
 // Request message for Memberships.CreateMembership, AIP-133 <https://aip.dev/133>.
 message CreateMembershipRequest {
-  // Group to add the member to, "groups/{group}".
+  // Group to add the member to, "ldapGroups/{ldap_group}".
   string parent = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).child_type = "protobufrfc.dev/Membership",
-    (buf.validate.field).string.pattern = "^groups/[^/]+$"
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+$"
   ];
 
   // The membership to create.
@@ -99,6 +99,6 @@ message DeleteMembershipRequest {
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
     (google.api.resource_reference).type = "protobufrfc.dev/Membership",
-    (buf.validate.field).string.pattern = "^groups/[^/]+/memberships/[^/]+$"
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+/memberships/[^/]+$"
   ];
 }

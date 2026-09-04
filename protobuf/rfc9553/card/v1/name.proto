@@ -1,0 +1,127 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc9553/card/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "NameProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Name is the Card "name" property, RFC 9553 section 2.2.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.1>.
+//
+// The structural difference from vCard is the point of JSContact. RFC 6350
+// section 6.2.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.2>'s N is five positional components in a fixed order,
+// so a name that does not fit that order cannot be expressed. Here a name is
+// an *ordered list of typed components*, so "given surname2 surname" is as
+// representable as "surname, given" -- and `is_ordered` says whether the
+// order given is meaningful or merely incidental.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.1.1.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.1
+message Name {
+  // The components in the order they should be read.
+  repeated NameComponent components = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Whether `components` is in a meaningful order, section 2.2.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.1>.
+  // False, the default, means the order carries no information and a client
+  // should assemble the name by its own convention.
+  bool is_ordered = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // The separator to put between components when none is given explicitly,
+  // section 2.2.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.1>. Usually a space.
+  string default_separator = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // The whole name as a single string, section 2.2.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.1>. This is
+  // vCard's FN (RFC 6350 section 6.2.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.1>), and the two convert directly.
+  //
+  // Named `display_name`, not the RFC's `full`: AIP-122 <https://aip.dev/122> bans the `_name`
+  // suffix outside a short allowlist that `display_name` is on, and a bare
+  // `full` names no thing. It also matches what the vCard package calls FN,
+  // which is the property this converts to.
+  string display_name = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // How to sort this name, section 2.2.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.1>, keyed by the component
+  // kind to sort on -- {"surname": "Rodriguez"}. A map because sorting rules
+  // differ by component and by locale.
+  map<string, string> sort_as = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // The script the phonetic components are written in, as an ISO 15924
+  // four-letter code, section 2.2.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.1>.
+  string phonetic_script = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^[A-Z][a-z]{3}$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // The notation the phonetic components use, section 2.2.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.1>.
+  PhoneticSystem phonetic_system = 7 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+}
+
+// NameComponent is one typed part of a Name, RFC 9553 section 2.2.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.2>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.1.2.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.2
+message NameComponent {
+  // The text of this component, section 2.2.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.2>. Mandatory.
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // What part of the name this is, section 2.2.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.2>. Mandatory.
+  NameComponentKind kind = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // A phonetic transcription of `value`, section 2.2.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.2>. The
+  // notation is on the enclosing Name, not repeated per component.
+  string phonetic = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// NameComponentKind is a name component's "kind", RFC 9553 section 2.2.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.2>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.1.2.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1.2
+enum NameComponentKind {
+  // Not specified. Section 2.2.1.2 makes `kind` mandatory, so this is not a
+  // legal value on the wire -- it exists because proto3 requires a zero.
+  NAME_COMPONENT_KIND_UNSPECIFIED = 0;
+
+  // An honorific title, e.g. "Dr".
+  NAME_COMPONENT_KIND_TITLE = 1;
+
+  // A given name.
+  NAME_COMPONENT_KIND_GIVEN = 2;
+
+  // A second given or middle name.
+  NAME_COMPONENT_KIND_GIVEN2 = 3;
+
+  // A surname.
+  NAME_COMPONENT_KIND_SURNAME = 4;
+
+  // A second surname, e.g. the maternal surname in Spanish practice.
+  NAME_COMPONENT_KIND_SURNAME2 = 5;
+
+  // A credential, e.g. "PhD".
+  NAME_COMPONENT_KIND_CREDENTIAL = 6;
+
+  // A generation marker, e.g. "Jr", "III".
+  NAME_COMPONENT_KIND_GENERATION = 7;
+
+  // Literal text to place between the components either side of it, which is
+  // why component order and `is_ordered` matter.
+  NAME_COMPONENT_KIND_SEPARATOR = 8;
+}

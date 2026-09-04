@@ -21,11 +21,23 @@ narrow one tool's scope so they stop overlapping. That is why `buf.yaml` uses
 code satisfies both. buf checks structure, api-linter checks API design, and
 every rule in each selected category is enforced.
 
-## 2. 200 lines per file, hard
+## 2. 250 lines per file, hard
 
 Comments and blank lines included. Applies to `.proto` and `.md` alike. A
 file over the cap gets split, never compressed — do not strip comments to
 squeeze under.
+
+It was 200, and moved because the cap started firing on files that were
+already maximally decomposed. `event.proto` holds one `message` and nothing
+else; protobuf cannot continue a message across files, so "split" was not an
+available operation, and its 28 fields are RFC 5545's shape rather than a
+decomposition failure. Meanwhile rules 3 and 11 *require* the verbosity — a
+comment on every field, every citation carrying its URL — that rule 2 was
+capping, and rule 2 forbids stripping comments to fit. The number was
+measuring the wrong thing.
+
+250 does not change the intent: the cap is a prompt to decompose, and where
+decomposition is genuinely possible it still applies.
 
 The split order for an RFC directory:
 
@@ -40,7 +52,7 @@ A package with no service omits `service.proto`. A resource with no embedded
 value objects omits `types.proto`.
 
 A package needing more than one service — one proto `service` block cannot
-span files, so a 200-line-per-service split forces separate services, e.g.
+span files, so a 250-line-per-service split forces separate services, e.g.
 `rfc5546/scheduling/v1`'s organiser/attendee send-permission split — names
 each pair `<role>_service.proto` and `<role>_messages.proto`, not
 `service_<role>.proto` or `messages_<role>.proto`.
@@ -120,7 +132,7 @@ Each resource directory is a self-contained package holding its resource,
 value objects, messages and service — forced by rule 4, since a package must
 contain everything it references.
 
-A direct consequence: **one service per resource.** `Groups` and
+A direct consequence: **one service per resource.** `LdapGroups` and
 `Memberships` are separate services, so creating a group with members is two
 calls and is not atomic. That cost is accepted; do not avoid it by merging
 packages.
@@ -160,14 +172,15 @@ survived four clean lint runs here. Audit with:
 grep -rh -A3 "google.api.resource) = {" protobuf/ | grep -E "type:|pattern:"
 ```
 
-## Rules 9-13
+## Rules 9-14
 
-Identifiers, AIP naming traps, RFC links, the two annotation systems, and
-the don't-pre-build rule are in `docs/conventions.md`, imported below. They carry the same weight as the
-rules above; the split exists only because this file has a 200-line cap of
-its own (rule 2).
+Identifiers, AIP naming traps, RFC links, the two annotation systems and the
+don't-pre-build rule are in `docs/conventions.md`; rule 14 -- which RFC in a
+lineage is canonical, and which way codecs convert -- is in `docs/ontology.md`.
+Both are imported below and carry the same weight; the split is rule 2's cap.
 
 @docs/conventions.md
+@docs/ontology.md
 
 ## Where to look things up
 
@@ -189,7 +202,7 @@ buf lint
 buf build
 ```
 
-plus `api-linter` over `protobuf/**/*.proto` and the 200-line cap. All of it
+plus `api-linter` over `protobuf/**/*.proto` and the 250-line cap. All of it
 is inline in `.github/workflows/ci.yml` -- read the steps there rather than
 trusting this list to stay current.
 

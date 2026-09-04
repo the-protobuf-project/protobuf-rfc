@@ -9,13 +9,15 @@ import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "google/protobuf/duration.proto";
 import "google/protobuf/timestamp.proto";
+import "protobuf/rfc5545/event/v1/alarm_types.proto";
 import "protobuf/rfc5545/event/v1/participant.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "AlarmProto";
 option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
 
-// Alarm is the VALARM component, RFC 5545 section 3.6.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.6>.
+// Alarm is the VALARM component, RFC 5545 section 3.6.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.6.6>, as extended by
+// RFC 9074 <https://www.rfc-editor.org/rfc/rfc9074.html>.
 //
 // A sub-component of VEVENT and VTODO, not a component of its own. It is a
 // value object here for the same reason: an alarm has no identity, is never
@@ -104,41 +106,40 @@ message Alarm {
   // ATTENDEE, section 3.8.4.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.1>. Who the email goes to. Required for
   // EMAIL, meaningless otherwise.
   repeated Attendee attendees = 9 [(google.api.field_behavior) = OPTIONAL];
-}
 
-// AlarmAction is the ACTION property, RFC 5545 section 3.8.6.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.1>.
-//
-// RFC 2445 also defined PROCEDURE, which ran an arbitrary program on the
-// viewer's machine. RFC 5545 dropped it, and it is not modelled here.
-//
-// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.6.1.
-// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.1
-enum AlarmAction {
-  // Not specified. Invalid in an alarm; ACTION is mandatory.
-  ALARM_ACTION_UNSPECIFIED = 0;
+  // UID, RFC 9074 section 4 <https://www.rfc-editor.org/rfc/rfc9074.html#section-4>. Cardinality *1.
+  //
+  // RFC 5545 gave VALARM no identity, which is why an alarm could not be
+  // acknowledged or snoozed across devices: there was nothing to name. Same
+  // two-identifier split as Event.ical_uid -- this is whatever the
+  // originating system chose and must survive a round trip unchanged.
+  string ical_uid = 10 [(google.api.field_behavior) = OPTIONAL];
 
-  // AUDIO. Play a sound.
-  ALARM_ACTION_AUDIO = 1;
+  // ACKNOWLEDGED, RFC 9074 section 6.1 <https://www.rfc-editor.org/rfc/rfc9074.html#section-6.1>. Cardinality *1. When this alarm
+  // was last dismissed, in UTC.
+  //
+  // A Timestamp and not CalendarTime, deliberately: section 6.1 fixes the
+  // value as a UTC DATE-TIME, so none of the floating or zoned forms that
+  // forced CalendarTime elsewhere can occur here.
+  google.protobuf.Timestamp acknowledged_time = 11 [(google.api.field_behavior) = OPTIONAL];
 
-  // DISPLAY. Show description as text.
-  ALARM_ACTION_DISPLAY = 2;
+  // PROXIMITY, RFC 9074 section 8.1 <https://www.rfc-editor.org/rfc/rfc9074.html#section-8.1>. Cardinality *1. Fires the alarm on
+  // a location change rather than at a time.
+  //
+  // Section 8.1 pairs this with a VLOCATION component (RFC 9073) naming the
+  // place. VLOCATION is not modelled yet, so a proximity alarm currently
+  // carries the trigger kind without the place it refers to.
+  Proximity proximity = 12 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
 
-  // EMAIL. Send description to attendees under subject summary.
-  ALARM_ACTION_EMAIL = 3;
-}
-
-// TriggerRelation is the RELATED parameter, RFC 5545 section 3.2.14 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14>.
-//
-// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.2.14.
-// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14
-enum TriggerRelation {
-  // Not specified; treat as TRIGGER_RELATION_START, the default in
-  // section 3.2.14 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14>.
-  TRIGGER_RELATION_UNSPECIFIED = 0;
-
-  // START. Offset counts from the component's start.
-  TRIGGER_RELATION_START = 1;
-
-  // END. Offset counts from the component's end.
-  TRIGGER_RELATION_END = 2;
+  // RELATED-TO with RELTYPE=SNOOZE, RFC 9074 sections 5 <https://www.rfc-editor.org/rfc/rfc9074.html#section-5> and 7.1 <https://www.rfc-editor.org/rfc/rfc9074.html#section-7.1>. The
+  // ical_uid of the alarm this one is a snooze of.
+  //
+  // Modelled as a single reference rather than a general RELATED-TO list:
+  // section 7.1 registers SNOOZE as a relationship from exactly one snoozing
+  // alarm to exactly one original. A general relationship list arrives with
+  // RFC 9253 and belongs on the component, not here.
+  string snoozed_alarm_uid = 13 [(google.api.field_behavior) = OPTIONAL];
 }

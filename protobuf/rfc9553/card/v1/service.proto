@@ -1,0 +1,158 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/protobuf/empty.proto";
+import "protobuf/rfc9553/card/v1/card.proto";
+import "protobuf/rfc9553/card/v1/messages.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Cards manages contacts in the canonical JSContact model.
+//
+// **This is where contact data lives.** Under rule 14 the newest published
+// RFC in a lineage is the storage form, so a contact saved through
+// protobuf.rfc6350.vcard.v1's Vcards service is converted here and stored as
+// a Card; reading it back through that service converts it out again, per
+// RFC 9555 <https://www.rfc-editor.org/rfc/rfc9555.html> as updated by RFC 9982 <https://www.rfc-editor.org/rfc/rfc9982.html>.
+//
+// That is the designed behaviour, not a lossy accident, and it is stated here
+// rather than left for a consumer to discover: **a vCard written through the
+// legacy API reads back as a vCard rendered from a Card, not as the bytes
+// that were sent.** Elements neither model shares survive in
+// `jscontact_props` (RFC 9555 section 3 <https://www.rfc-editor.org/rfc/rfc9555.html#section-3>'s `vCardProps`), so the round trip
+// keeps the data even where it cannot keep the encoding.
+//
+// These are the AIP-131..135 standard methods and nothing else. Serialising a
+// Card to `application/jscontact+json` is not a Card-specific concern -- see
+// protobuf.shared.interchange.v1.Interchange, which does it for any resource
+// type.
+service Cards {
+  // Retrieves one Card.
+  //
+  //   GET /v1/{name=cards/*}
+  //
+  // Safe and idempotent. Read the `etag` here and pass it back on update or
+  // delete to make the write conditional.
+  //
+  //   NOT_FOUND          no such Card, or it is soft-deleted and `show_deleted` was not set
+  //   INVALID_ARGUMENT   name does not match cards/*
+  //   PERMISSION_DENIED  caller may not read it
+  rpc GetCard(GetCardRequest) returns (Card) {
+    option (google.api.http) = {get: "/v1/{name=cards/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists Cards.
+  //
+  //   GET /v1/cards
+  //
+  // Paginated per AIP-158: pass `page_size` (defaults to 50, capped at 1000)
+  // and the `next_page_token` from the previous response. Page tokens are
+  // opaque and may expire; do not construct or store them.
+  //
+  // A Card may embed media as a "data:" URI (section 2.6.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.6.4>), which makes
+  // an individual Card arbitrarily large. Expect to page more often than the
+  // Card count alone suggests.
+  //
+  //   INVALID_ARGUMENT   malformed filter, or page_size out of range
+  //   PERMISSION_DENIED  caller may not list this collection
+  rpc ListCards(ListCardsRequest) returns (ListCardsResponse) {
+    option (google.api.http) = {get: "/v1/cards"};
+  }
+
+  // Creates a Card.
+  //
+  //   POST /v1/cards
+  //   body: the Card itself
+  //
+  // Server-assigned fields on the request body are ignored: `name`, `uid`,
+  // `etag` and the server timestamps are set regardless of what is sent.
+  // `jscontact_uid` is not among them -- RFC 9982 <https://www.rfc-editor.org/rfc/rfc9982.html> makes it optional and it
+  // is preserved exactly as supplied, because inventing one is what that
+  // amendment exists to prevent.
+  //
+  // Not idempotent. Retrying after a timeout may create a second Card;
+  // supply `card_id` if the caller needs retry safety.
+  //
+  //   ALREADY_EXISTS     that card_id is taken
+  //   INVALID_ARGUMENT   a field violates its buf.validate constraint
+  //   PERMISSION_DENIED  caller may not create here
+  rpc CreateCard(CreateCardRequest) returns (Card) {
+    option (google.api.http) = {
+      post: "/v1/cards"
+      body: "card"
+    };
+    option (google.api.method_signature) = "card,card_id";
+  }
+
+  // Updates a Card.
+  //
+  //   PATCH /v1/{card.name=cards/*}
+  //   body: the Card itself
+  //
+  // A partial update: only fields named in `update_mask` are written. An
+  // empty mask writes every mutable field, which will clear anything the
+  // caller left unset -- pass a mask unless that is the intent. A map-valued
+  // property is replaced wholesale rather than merged; see
+  // UpdateCardRequest.update_mask.
+  //
+  // Idempotent. Pass the `etag` read from Get to make the write conditional.
+  //
+  //   NOT_FOUND          no such Card
+  //   ABORTED            etag does not match the stored resource
+  //   INVALID_ARGUMENT   mask names an unknown or immutable field
+  //   PERMISSION_DENIED  caller may not modify it
+  rpc UpdateCard(UpdateCardRequest) returns (Card) {
+    option (google.api.http) = {
+      patch: "/v1/{card.name=cards/*}"
+      body: "card"
+    };
+    option (google.api.method_signature) = "card,update_mask";
+  }
+
+  // Deletes a Card.
+  //
+  //   DELETE /v1/{name=cards/*}
+  //
+  // Soft delete: the Card is marked deleted, disappears from List unless
+  // `show_deleted` is set, and is purged at `expire_time`. Recover it with
+  // Undelete before then.
+  //
+  // Idempotent in effect but not in reporting: a second delete returns
+  // NOT_FOUND rather than succeeding silently.
+  //
+  //   NOT_FOUND          no such Card
+  //   ABORTED            etag does not match
+  //   PERMISSION_DENIED  caller may not delete it
+  rpc DeleteCard(DeleteCardRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=cards/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Restores a soft-deleted Card.
+  //
+  //   POST /v1/{name=cards/*}:undelete
+  //
+  // Valid only before `expire_time`; after that the Card is gone and this
+  // returns NOT_FOUND. Clears `delete_time` and `expire_time` and returns the
+  // Card as it was.
+  //
+  //   NOT_FOUND          no such Card, or already purged
+  //   ALREADY_EXISTS     the Card is not deleted
+  //   PERMISSION_DENIED  caller may not restore it
+  rpc UndeleteCard(UndeleteCardRequest) returns (Card) {
+    option (google.api.http) = {
+      post: "/v1/{name=cards/*}:undelete"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}

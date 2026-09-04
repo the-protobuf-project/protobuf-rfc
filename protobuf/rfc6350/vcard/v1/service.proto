@@ -1,0 +1,160 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc6350.vcard.v1;
+
+import "google/api/annotations.proto";
+import "google/api/client.proto";
+import "google/protobuf/empty.proto";
+import "protobuf/rfc6350/vcard/v1/messages.proto";
+import "protobuf/rfc6350/vcard/v1/vcard.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ServiceProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
+
+// Vcards manages contacts as addressable resources.
+//
+// The legacy layer of the contact lineage under rule 14, and a first-class
+// one: a consumer holding vCards keeps a full CRUD API here, and data saved
+// through it is stored as the canonical model and converted back on read.
+//
+// RFC 6350 specifies a data format and no access protocol. CardDAV (RFC
+// 6352) is the standards-track answer, and -- following the same audit that
+// found CalDAV needed no new RPCs on Calendars -- needs none here either:
+// address book collection creation is plain WebDAV MKCOL (section 6.3.1 <https://www.rfc-editor.org/rfc/rfc6352.html#section-6.3.1>) so
+// CreateVcard already answers it; If-Match concurrency (section 6.3.2.3 <https://www.rfc-editor.org/rfc/rfc6352.html#section-6.3.2.3>) is
+// the `etag` every resource already carries, AIP-154 <https://aip.dev/154>; and the
+// addressbook-query REPORT (section 8.6 <https://www.rfc-editor.org/rfc/rfc6352.html#section-8.6>) is ListVcards' AIP-160 <https://aip.dev/160> filter over
+// Contact's own fields. Unlike CalDAV, there is no capability with no
+// standard-method equivalent, so this package gains nothing CardDAV-specific
+// at all. addressbook-multiget (section 8.7 <https://www.rfc-editor.org/rfc/rfc6352.html#section-8.7>) is deferred the same way as
+// CalDAV's calendar-multiget -- repeated GetVcard today, a batch method if a
+// consumer needs the round-trip savings.
+//
+// These are the AIP-131..135 standard methods and nothing else. Serializing a
+// vCard to a file is not a Vcard-specific concern -- see
+// protobuf.shared.interchange.v1.Interchange, which does it for any resource type.
+service Vcards {
+  // Retrieves one vCard.
+  //
+  //   GET /v1/{name=vcards/*}
+  //
+  // Safe and idempotent. Returns the resource as stored; no field is computed
+  // per-caller. Read the `etag` here and pass it back on update or delete to
+  // make the write conditional.
+  //
+  //   NOT_FOUND          no such vCard, or it is soft-deleted and `show_deleted` was not set
+  //   INVALID_ARGUMENT   name does not match vcards/*
+  //   PERMISSION_DENIED  caller may not read it
+  rpc GetVcard(GetVcardRequest) returns (Vcard) {
+    option (google.api.http) = {get: "/v1/{name=vcards/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Lists vCards.
+  //
+  //   GET /v1/vcards
+  //
+  // Paginated per AIP-158: pass `page_size` (defaults to 50, capped at 1000)
+  // and the `next_page_token` from the previous response. An empty
+  // `next_page_token` means the last page. Page tokens are opaque and may
+  // expire; do not construct or store them.
+  //
+  // Filtering uses the AIP-160 expression language over the resource's own
+  // fields. Results carry no guaranteed order.
+  //
+  //   INVALID_ARGUMENT   malformed filter, or page_size out of range
+  //   PERMISSION_DENIED  caller may not list this collection
+  rpc ListVcards(ListVcardsRequest) returns (ListVcardsResponse) {
+    option (google.api.http) = {get: "/v1/vcards"};
+  }
+
+  // Creates a vCard.
+  //
+  //   POST /v1/vcards
+  //   body: the vCard itself
+  //
+  // Server-assigned fields on the request body are ignored: `name`, `uid`,
+  // `etag` and the timestamps are set by the server regardless of what is
+  // sent. Supply `vcard_id` to choose the final path segment; leave it empty
+  // and the server generates one.
+  //
+  // Not idempotent. Retrying after a timeout may create a second vCard;
+  // supply `vcard_id` if the caller needs retry safety.
+  //
+  //   ALREADY_EXISTS     that vcard_id is taken
+  //   INVALID_ARGUMENT   a field violates its buf.validate constraint
+  //   PERMISSION_DENIED  caller may not create here
+  rpc CreateVcard(CreateVcardRequest) returns (Vcard) {
+    option (google.api.http) = {
+      post: "/v1/vcards"
+      body: "vcard"
+    };
+    option (google.api.method_signature) = "vcard,vcard_id";
+  }
+
+  // Updates a vCard.
+  //
+  //   PATCH /v1/{vcard.name=vcards/*}
+  //   body: the vCard itself
+  //
+  // A partial update: only fields named in `update_mask` are written. An
+  // empty mask writes every mutable field, which will clear anything the
+  // caller left unset -- pass a mask unless that is the intent. OUTPUT_ONLY
+  // and IMMUTABLE fields are rejected rather than silently dropped.
+  //
+  // Idempotent. Pass the `etag` read from Get to make the write conditional.
+  //
+  //   NOT_FOUND          no such vCard
+  //   ABORTED            etag does not match the stored resource
+  //   INVALID_ARGUMENT   mask names an unknown or immutable field
+  //   PERMISSION_DENIED  caller may not modify it
+  rpc UpdateVcard(UpdateVcardRequest) returns (Vcard) {
+    option (google.api.http) = {
+      patch: "/v1/{vcard.name=vcards/*}"
+      body: "vcard"
+    };
+    option (google.api.method_signature) = "vcard,update_mask";
+  }
+
+  // Deletes a vCard.
+  //
+  //   DELETE /v1/{name=vcards/*}
+  //
+  // Soft delete: the vCard is marked deleted, disappears from List unless
+  // `show_deleted` is set, and is purged at `expire_time`. Recover it with
+  // Undelete before then.
+  //
+  // Idempotent in effect but not in reporting: a second delete returns
+  // NOT_FOUND rather than succeeding silently.
+  //
+  //   NOT_FOUND          no such vCard
+  //   ABORTED            etag does not match
+  //   PERMISSION_DENIED  caller may not delete it
+  rpc DeleteVcard(DeleteVcardRequest) returns (google.protobuf.Empty) {
+    option (google.api.http) = {delete: "/v1/{name=vcards/*}"};
+    option (google.api.method_signature) = "name";
+  }
+
+  // Restores a soft-deleted vCard.
+  //
+  //   POST /v1/{name=vcards/*}:undelete
+  //
+  // Valid only before `expire_time`; after that the vCard is gone and this
+  // returns NOT_FOUND. Clears `delete_time` and `expire_time` and returns the
+  // vCard as it was.
+  //
+  //   NOT_FOUND          no such vCard, or already purged
+  //   ALREADY_EXISTS     the vCard is not deleted
+  //   PERMISSION_DENIED  caller may not restore it
+  rpc UndeleteVcard(UndeleteVcardRequest) returns (Vcard) {
+    option (google.api.http) = {
+      post: "/v1/{name=vcards/*}:undelete"
+      body: "*"
+    };
+    option (google.api.method_signature) = "name";
+  }
+}

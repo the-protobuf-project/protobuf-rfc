@@ -25,12 +25,12 @@ option java_package = "io.github.theprotobufproject.protobuf.shared.interchange.
 // **What makes it generic**
 //
 // `resource_type` is the string a resource already declares in its
-// `google.api.resource` annotation -- "protobufrfc.dev/User". A resource becomes
+// `google.api.resource` annotation -- "protobufrfc.dev/Vcard". A resource becomes
 // exportable by declaring that and having a codec registered, not by growing
 // methods of its own, so AIP-131..135 services stay at the standard methods.
 //
 // Codecs register against a `(resource_type, media_type)` pair. "text/vcard"
-// means something for protobufrfc.dev/User and nothing for protobufrfc.dev/Group,
+// means something for protobufrfc.dev/Vcard and nothing for protobufrfc.dev/LdapGroup,
 // so an unsupported pair is the common client error, not an edge case.
 //
 // **Long-running operations**
@@ -121,7 +121,7 @@ service Interchange {
   //   GET /v1/codecs
   //
   // The discovery half of the registry. A client that wants to offer "export
-  // as..." needs to know that text/vcard applies to protobufrfc.dev/User and
+  // as..." needs to know that text/vcard applies to protobufrfc.dev/Vcard and
   // nothing else, and guessing from the resource type is not possible -- the
   // pairing is a deployment fact, not a property of either string.
   //

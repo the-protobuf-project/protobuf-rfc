@@ -1,0 +1,134 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc6350.vcard.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc6350/vcard/v1/contact_name.proto";
+import "protobuf/rfc6350/vcard/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ContactAddressProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
+
+// Address is the ADR property, RFC 6350 section 6.3.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.3.1>, as extended by RFC
+// 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>.
+//
+// RFC 6350 fixed seven components in a defined order; RFC 9554 section 2.1
+// appends eleven more, so an address can name a room, a floor, a block or a
+// landmark instead of flattening all of it into street_addresses. This is
+// what makes addresses outside the seven-component Western model representable,
+// and it is why google.type.PostalAddress was rejected for this package --
+// see docs/adding-data.md.
+//
+// Component order in the wire format is the order of the fields here.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.3.1.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.3.1
+// Reference: RFC 9554 "vCard Format Extensions for JSContact", section 2.1.
+// https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1
+message Address {
+  // Post office box. Section 6.3.1 requires the component to exist in the
+  // structure but SHOULD be empty in new vCards; kept so a parsed vCard
+  // round-trips without silently dropping data.
+  repeated string post_office_box = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Extended address. Same deprecation caveat as post_office_box.
+  repeated string extended_addresses = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Street address.
+  repeated string street_addresses = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // City or locality.
+  repeated string localities = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // State, province or region.
+  repeated string regions = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Postal or ZIP code.
+  repeated string postal_codes = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Country.
+  repeated string countries = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 8 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>. 1 is most preferred, 100 least. Zero means
+  // unset, not most-preferred.
+  int32 pref = 9 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+
+  // ROOM, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. Room, suite number or identifier.
+  repeated string rooms = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // APARTMENT, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. Apartment number, extension
+  // designation or box number.
+  repeated string apartments = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // FLOOR, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. Building floor or level.
+  repeated string floors = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // NUMBER, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. Street number, which section 2.1 notes
+  // is not necessarily numeric.
+  repeated string street_numbers = 13 [(google.api.field_behavior) = OPTIONAL];
+
+  // NAME, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. The street name on its own, without the
+  // number. Called `streets` rather than the RFC's "street name": AIP-122
+  // reserves the `_name` suffix, and `street_addresses` above already holds
+  // the whole undivided line.
+  repeated string streets = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // BUILDING, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. Building, tower or condominium.
+  repeated string buildings = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // BLOCK, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. Block name or number.
+  repeated string blocks = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // SUBDISTRICT, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. Subdistrict, ward or other
+  // administrative division below district.
+  repeated string subdistricts = 17 [(google.api.field_behavior) = OPTIONAL];
+
+  // DISTRICT, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. District or county.
+  repeated string districts = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  // LANDMARK, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. A nearby landmark or prominent
+  // feature, used for orientation where street numbering is sparse.
+  repeated string landmarks = 19 [(google.api.field_behavior) = OPTIONAL];
+
+  // DIRECTION, RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>. Cardinal direction or quadrant,
+  // e.g. "NW".
+  repeated string directions = 20 [(google.api.field_behavior) = OPTIONAL];
+
+  // LABEL parameter, RFC 9554 section 4.5 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.5>. The formatted address as it
+  // should be written on a mailing label, newlines included. Replaces RFC
+  // 6350 section 6.3.1's LABEL parameter with one that section 4.5 defines
+  // for general use.
+  string label = 21 [(google.api.field_behavior) = OPTIONAL];
+
+  // PHONETIC parameter, RFC 9554 section 4.6 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.6>. Names the notation the
+  // components are transcribed in, when they are a transcription.
+  PhoneticSystem phonetic = 22 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // SCRIPT parameter, RFC 9554 section 4.8 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.8>. ISO 15924 four-letter script
+  // code. Required by section 4.6 when phonetic is PHONETIC_SYSTEM_SCRIPT.
+  string script = 23 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^[A-Z][a-z]{3}$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+}

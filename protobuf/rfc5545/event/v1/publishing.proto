@@ -1,0 +1,140 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/type/latlng.proto";
+import "protobuf/rfc5545/event/v1/publishing_types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "PublishingProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Participant is the PARTICIPANT component, RFC 9073 section 7.1 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.1>.
+//
+// **Not an Attendee.** RFC 5545 section 3.8.4.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.1>'s ATTENDEE is a scheduling
+// party: someone iTIP sends invitations to and collects replies from, keyed
+// on a calendar address they must have. A Participant is someone the event
+// *involves* -- a speaker, a sponsor, a performer, an emergency contact --
+// who may have no calendar address at all and is never sent a REQUEST.
+//
+// The two overlap without either containing the other, which is why RFC 9073
+// added a component instead of a parameter on ATTENDEE, and why this is a
+// separate message rather than a field on Attendee. A person who both speaks
+// at an event and is invited to it appears as both, and that is correct.
+//
+// Reference: RFC 9073 "Event Publishing Extensions to iCalendar", section 7.1.
+// https://www.rfc-editor.org/rfc/rfc9073.html#section-7.1
+message Participant {
+  // UID, RFC 5545 section 3.8.4.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.7>. Required by RFC 9073 section 7.1 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.1>.
+  //
+  // Interchange identity, not ours -- rule 9's `<format>_uid` split.
+  string ical_uid = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // PARTICIPANT-TYPE, RFC 9073 section 6.2 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.2>. Required by section 7.1 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.1>: a
+  // participant with no stated role says nothing the attendee list did not.
+  repeated ParticipantType participant_types = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).repeated.min_items = 1,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // CALENDAR-ADDRESS, RFC 9073 section 6.4 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.4>, e.g.
+  // "mailto:jane@example.com".
+  //
+  // Optional, unlike Attendee.address, which is required. That difference is
+  // the point of the component: a speaker listed in a published programme
+  // often has no calendar address, and demanding one would make them
+  // unrepresentable.
+  string calendar_address = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // SUMMARY, RFC 5545 section 3.8.1.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.12>. The participant's name as
+  // shown, e.g. "Dr Jane Rodríguez".
+  string summary = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // DESCRIPTION, RFC 5545 section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>. A biography or note.
+  string description = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // URL, RFC 5545 section 3.8.4.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.6>. A page about this participant.
+  string url = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // GEO, RFC 5545 section 3.8.1.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.6>. Where the participant is, for a
+  // distributed event where that is not the event's own location.
+  google.type.LatLng position = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // STRUCTURED-DATA, RFC 9073 section 6.6 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.6>. Machine-readable detail,
+  // e.g. a vCard for the participant.
+  repeated StructuredData structured_data = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // STYLED-DESCRIPTION, RFC 9073 section 6.5 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.5>. A rich-text biography.
+  repeated StyledDescription styled_descriptions = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // VLOCATION, RFC 9073 section 7.2 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.2>. Section 7.1's grammar is
+  // `partprop *locationc *resourcec`, so a participant carries its own
+  // places -- where a speaker presents from, which need not be where the
+  // event is.
+  repeated Location structured_locations = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // VRESOURCE, RFC 9073 section 7.3 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.3>. What this participant needs,
+  // e.g. a signer or a microphone.
+  repeated Resource resources = 11 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// ParticipantType is the PARTICIPANT-TYPE property, RFC 9073 section 6.2 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.2>.
+//
+// The ten values section 6.2 registers. It also permits IANA-registered
+// tokens and x-names; an unrecognised value arrives through
+// ExtensionProperty rather than being folded into one of these, which would
+// assert a role the publisher did not state.
+//
+// Reference: RFC 9073 "Event Publishing Extensions to iCalendar", section 6.2.
+// https://www.rfc-editor.org/rfc/rfc9073.html#section-6.2
+enum ParticipantType {
+  // Not specified.
+  PARTICIPANT_TYPE_UNSPECIFIED = 0;
+
+  // An active participant, section 6.2 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.2>.
+  PARTICIPANT_TYPE_ACTIVE = 1;
+
+  // An inactive participant: present but not taking part.
+  PARTICIPANT_TYPE_INACTIVE = 2;
+
+  // A sponsor of the event.
+  PARTICIPANT_TYPE_SPONSOR = 3;
+
+  // A general contact for the event.
+  PARTICIPANT_TYPE_CONTACT = 4;
+
+  // The contact for bookings.
+  PARTICIPANT_TYPE_BOOKING_CONTACT = 5;
+
+  // The contact in an emergency.
+  PARTICIPANT_TYPE_EMERGENCY_CONTACT = 6;
+
+  // The contact for publicity and press.
+  PARTICIPANT_TYPE_PUBLICITY_CONTACT = 7;
+
+  // The contact for the event's planners.
+  PARTICIPANT_TYPE_PLANNER_CONTACT = 8;
+
+  // A performer, e.g. a musician or actor.
+  PARTICIPANT_TYPE_PERFORMER = 9;
+
+  // A speaker, e.g. at a conference.
+  PARTICIPANT_TYPE_SPEAKER = 10;
+}

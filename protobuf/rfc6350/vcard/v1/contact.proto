@@ -3,38 +3,46 @@
 
 syntax = "proto3";
 
-package protobuf.rfc6350.user.v1;
+package protobuf.rfc6350.vcard.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
-import "protobuf/rfc6350/user/v1/contact_location.proto";
-import "protobuf/rfc6350/user/v1/contact_method.proto";
-import "protobuf/rfc6350/user/v1/contact_property.proto";
-import "protobuf/rfc6350/user/v1/contact_relation.proto";
-import "protobuf/rfc6350/user/v1/date_or_text.proto";
-import "protobuf/rfc6350/user/v1/types.proto";
+import "protobuf/rfc6350/vcard/v1/contact_address.proto";
+import "protobuf/rfc6350/vcard/v1/contact_location.proto";
+import "protobuf/rfc6350/vcard/v1/contact_method.proto";
+import "protobuf/rfc6350/vcard/v1/contact_name.proto";
+import "protobuf/rfc6350/vcard/v1/contact_property.proto";
+import "protobuf/rfc6350/vcard/v1/contact_relation.proto";
+import "protobuf/rfc6350/vcard/v1/contact_speech.proto";
+import "protobuf/rfc6350/vcard/v1/date_or_text.proto";
+import "protobuf/rfc6350/vcard/v1/types.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "ContactProto";
-option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
 
 // Contact is the vCard property set, RFC 6350 section 6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6>.
 //
-// A value object with no identity of its own: User carries the identity and
+// A value object with no identity of its own: Vcard carries the identity and
 // embeds this. RFC 6350 specifies what a contact is and says nothing about
 // how one is named, stored or listed, so a resource name has no place here.
 //
-// Scope is nineteen properties -- KIND, FN, N, EMAIL, TEL, ADR, ORG, TITLE,
-// NOTE, BDAY, ANNIVERSARY, NICKNAME, URL, ROLE, IMPP, LANG, GEO, TZ, RELATED
-// -- plus CATEGORIES as a flat filter target. MEMBER is deliberately not
-// among them: it is the same problem Group and Membership already solve, in
-// protobuf.rfc4519.membership.v1, so it stays there rather than duplicating
-// group affiliation as a second mechanism on Contact -- see Relation for the
-// reasoning. Section 6 defines roughly fifteen more properties; they get
-// added when a consumer needs them.
+// Scope is nineteen RFC 6350 properties -- KIND, FN, N, EMAIL, TEL, ADR, ORG,
+// TITLE, NOTE, BDAY, ANNIVERSARY, NICKNAME, URL, ROLE, IMPP, LANG, GEO, TZ,
+// RELATED -- plus CATEGORIES as a flat filter target, and four from RFC 9554:
+// PRONOUNS, GRAMGENDER, SOCIALPROFILE and LANGUAGE. CREATED, the fifth RFC
+// 9554 property, is on Vcard with the other document-level provenance.
+//
+// MEMBER is deliberately not among them: it is the same problem Group and
+// Membership already solve, in protobuf.rfc4519.membership.v1, so it stays
+// there rather than duplicating group affiliation as a second mechanism on
+// Contact -- see Relation for the reasoning. Section 6 defines roughly
+// fifteen more properties; they get added when a consumer needs them.
 //
 // Reference: RFC 6350 "vCard Format Specification", section 6.
 // https://www.rfc-editor.org/rfc/rfc6350.html#section-6
+// Reference: RFC 9554 "vCard Format Extensions for JSContact", section 3.
+// https://www.rfc-editor.org/rfc/rfc9554.html#section-3
 message Contact {
   // KIND, section 6.1.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.1.4>.
   Kind kind = 1 [
@@ -115,4 +123,24 @@ message Contact {
   // RELATED, section 6.6.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.6>. MEMBER (section 6.6.5 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.5>) is deliberately
   // not a field here; see Relation's own comment for why.
   repeated Relation relations = 21 [(google.api.field_behavior) = OPTIONAL];
+
+  // PRONOUNS, RFC 9554 section 3.4 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.4>.
+  repeated Pronouns pronouns = 22 [(google.api.field_behavior) = OPTIONAL];
+
+  // GRAMGENDER, RFC 9554 section 3.2 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.2>. Grammatical gender for
+  // generating prose, one per language; not gender identity, which is
+  // pronouns above.
+  repeated GrammaticalGender grammatical_genders = 23 [(google.api.field_behavior) = OPTIONAL];
+
+  // SOCIALPROFILE, RFC 9554 section 3.5 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.5>.
+  repeated SocialProfile social_profiles = 24 [(google.api.field_behavior) = OPTIONAL];
+
+  // LANGUAGE, RFC 9554 section 3.3 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.3>. Cardinality *1. The language the
+  // human-readable text in this vCard is written in, as a BCP 47 tag, RFC
+  // 5646 <https://www.rfc-editor.org/rfc/rfc5646.html>.
+  //
+  // Not `languages` above, which is LANG (section 6.4.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.4>) and says which
+  // languages the person may be contacted in. This one describes the
+  // document; that one describes the person.
+  string default_language_code = 25 [(google.api.field_behavior) = OPTIONAL];
 }

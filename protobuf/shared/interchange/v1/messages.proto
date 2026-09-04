@@ -17,7 +17,7 @@ option java_package = "io.github.theprotobufproject.protobuf.shared.interchange.
 // Request message for Interchange.ExportResources.
 message ExportResourcesRequest {
   // Resource type to export, exactly as declared in that resource's
-  // google.api.resource annotation -- e.g. "protobufrfc.dev/User". This is the
+  // google.api.resource annotation -- e.g. "protobufrfc.dev/Vcard". This is the
   // dynamic part: the set of exportable things is the set of declared
   // resource types, so a new resource becomes exportable by existing, not by
   // gaining an Export method of its own.
@@ -42,7 +42,7 @@ message ExportResourcesRequest {
   //
   // Codecs register against a (resource_type, media_type) pair, so this is
   // where the request can fail as unsupported: "text/vcard" means something
-  // for protobufrfc.dev/User and nothing for protobufrfc.dev/Group.
+  // for protobufrfc.dev/Vcard and nothing for protobufrfc.dev/LdapGroup.
   string media_type = 5 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).string.pattern = "^[a-z]+/[A-Za-z0-9.+-]+(; *.+)?$"
@@ -86,7 +86,7 @@ message ExportResourcesMetadata {
 
 // Request message for Interchange.ImportResources.
 message ImportResourcesRequest {
-  // Resource type the payload contains, e.g. "protobufrfc.dev/User".
+  // Resource type the payload contains, e.g. "protobufrfc.dev/Vcard".
   string resource_type = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).string.pattern = "^[a-z0-9.]+/[A-Za-z]+$"

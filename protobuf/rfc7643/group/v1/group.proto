@@ -1,0 +1,136 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc7643.group.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "GroupProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc7643.group.v1";
+
+// Group is the SCIM Group resource, RFC 7643 section 4.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2>.
+//
+// **The canonical group model** under rule 14, holding the plain name RFC
+// 4519's `groupOfNames` gave up when it became `LdapGroup`.
+//
+// Membership is a field here, not a separate resource. That is the opposite
+// of the choice protobuf.rfc4519.membership.v1 made, and deliberately so:
+// section 4.2 defines `members` as an attribute of the Group and RFC 7644
+// changes it by PATCHing the Group, so a separate Membership resource would
+// invent an addressing scheme SCIM does not have. The LDAP package split it
+// out because `member` there is a bare DN with no room for a role; SCIM's
+// member has `type` and `$ref` and needs no such rescue.
+//
+// The cost is the one rule 6 already names in reverse: creating a group with
+// members is one call here and two in the LDAP package, and the two lineages
+// therefore do not have matching call graphs.
+//
+// Reference: RFC 7643 "System for Cross-domain Identity Management: Core Schema", section 4.2.
+// https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2
+message Group {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/Group"
+    pattern: "groups/{group}"
+    singular: "group"
+    plural: "groups"
+  };
+
+  // Resource name, "groups/{group}". Assigned by the server.
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^groups/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id, SCIM's `id`, section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // SCIM's `externalId`, section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>. The provisioning client's own
+  // identifier, preserved verbatim so a sync matches rather than duplicates.
+  string external_uid = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // SCIM's `displayName`, section 4.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2>. REQUIRED by section 4.2.
+  string display_name = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // SCIM's `members`, section 4.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2>.
+  repeated Member members = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. SCIM's
+  // `meta.version`, section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>.
+  string etag = 6 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this group was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp delete_time = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted group is purged for good. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp expire_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this group was created. SCIM's `meta.created`, section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>.
+  google.protobuf.Timestamp create_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this group was last modified. SCIM's `meta.lastModified`,
+  // section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>.
+  google.protobuf.Timestamp update_time = 10 [(google.api.field_behavior) = OUTPUT_ONLY];
+}
+
+// Member is one entry of a Group's "members", RFC 7643 section 4.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2>.
+//
+// Section 4.2 makes every sub-attribute immutable: a membership is added and
+// removed, never edited in place. That is the same reasoning that made
+// protobuf.rfc4519.membership.v1's Membership delete permanently rather than
+// soft-delete -- an edge either exists or it does not.
+//
+// Reference: RFC 7643 "System for Cross-domain Identity Management: Core Schema", section 4.2.
+// https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2
+message Member {
+  // The member's `uid`, section 4.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2>. A User or a nested Group.
+  //
+  // Not a google.api.resource_reference: section 4.2 types this as the bare
+  // id rather than as a resource name, and the User it refers to lives in
+  // another proto package, which AIP-215 <https://aip.dev/215> forbids naming from here anyway.
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.field_behavior) = IMMUTABLE,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // A URI resolving to the member, section 4.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2>. SCIM spells this
+  // `$ref`, which is not a legal protobuf field name.
+  string reference_uri = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Whether the member is a "User" or a "Group", section 4.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.2>. A group
+  // may contain groups, which is how SCIM expresses nesting.
+  string attribute_type = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // A human-readable label for the member, section 2.4 <https://www.rfc-editor.org/rfc/rfc7643.html#section-2.4>.
+  string display = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+}

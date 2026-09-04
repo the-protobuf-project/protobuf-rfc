@@ -1,0 +1,137 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc9553/card/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "OrganizationProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Organization is one entry of the Card "organizations" property, RFC 9553
+// section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.3.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3
+message Organization {
+  // The organization's name, section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>.
+  //
+  // Named `display_name`, not the RFC's `name`: a field called `name` makes
+  // api-linter treat the enclosing message as a resource, and AIP-122 <https://aip.dev/122>
+  // restricts the `_name` suffix to a short allowlist this is on.
+  string display_name = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Organizational units, outermost first, section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>.
+  repeated OrgUnit units = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // How to sort this organization, section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>.
+  string sort_as = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // When this organization is relevant, section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>.
+  repeated Context contexts = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+}
+
+// OrgUnit is one unit within an Organization, RFC 9553 section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>.
+//
+// A message rather than a bare string, unlike the vCard package's
+// Organization.units: section 2.2.3 gives each unit its own `sortAs`, which a
+// plain string list cannot carry.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.3.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3
+message OrgUnit {
+  // The unit's name, section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>. Mandatory. See
+  // Organization.display_name for why it is not called `name`.
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // How to sort this unit, section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>.
+  string sort_as = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Title is one entry of the Card "titles" property, RFC 9553 section 2.2.5 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.5>.
+//
+// Collapses vCard's two separate properties, TITLE (RFC 6350
+// section 6.6.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.1>) and ROLE (section 6.6.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.2>), into one object
+// distinguished by `kind` -- so converting from vCard is a merge and
+// converting back is a split on that field.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.5.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.5
+message Title {
+  // The title or role text, section 2.2.5 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.5>. Mandatory. See
+  // Organization.display_name for why it is not called `name`.
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // Whether this is a job title or a role, section 2.2.5 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.5>. An absent
+  // value means TITLE_KIND_TITLE.
+  TitleKind kind = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // The id of the Organization this title is held at, section 2.2.5 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.5>,
+  // as a key into Card.organizations.
+  //
+  // Named `organization_key` rather than the RFC's `organizationId`:
+  // AIP-122 <https://aip.dev/122> reserves the `_id` suffix, and this is a map key rather than a
+  // resource identifier.
+  string organization_key = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Nickname is one entry of the Card "nicknames" property, RFC 9553
+// section 2.2.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.2>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.2.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.2
+message Nickname {
+  // The nickname, section 2.2.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.2>. Mandatory. See
+  // Organization.display_name for why it is not called `name`.
+  string display_name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // When this nickname is used, section 2.2.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.2>.
+  repeated Context contexts = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // Preference, section 1.5.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// TitleKind is a Title "kind" value, RFC 9553 section 2.2.5 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.5>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.5.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.5
+enum TitleKind {
+  // Not specified. Section 2.2.5 defaults to TITLE_KIND_TITLE.
+  TITLE_KIND_UNSPECIFIED = 0;
+
+  // A job title, e.g. "Head of Research". vCard's TITLE.
+  TITLE_KIND_TITLE = 1;
+
+  // A role played, e.g. "Project lead". vCard's ROLE.
+  TITLE_KIND_ROLE = 2;
+}

@@ -1,0 +1,106 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc6350.vcard.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc6350/vcard/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ContactSpeechProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
+
+// Pronouns is the PRONOUNS property, RFC 9554 section 3.4 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.4>.
+//
+// Free text, not an enumeration: section 3.4 defines the value as a single
+// text value precisely because the set of pronouns is open and varies by
+// language. A closed enum here would reject valid input, so the RFC's own
+// choice is kept.
+//
+// Cardinality * -- repeated, because a person may list pronouns in more than
+// one language, which is what the LANGUAGE parameter distinguishes.
+//
+// Reference: RFC 9554 "vCard Format Extensions for JSContact", section 3.4.
+// https://www.rfc-editor.org/rfc/rfc9554.html#section-3.4
+message Pronouns {
+  // The pronouns themselves, e.g. "they/them".
+  string value = 1 [(google.api.field_behavior) = REQUIRED];
+
+  // LANGUAGE parameter, RFC 6350 section 5.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.1>. A BCP 47 language tag, RFC
+  // 5646 <https://www.rfc-editor.org/rfc/rfc5646.html>, naming the language these pronouns are for.
+  string language_code = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // TYPE parameter, RFC 6350 section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, RFC 6350 section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>. 1 is most preferred, 100 least.
+  int32 pref = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// GrammaticalGender is the GRAMGENDER property, RFC 9554 section 3.2 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.2>.
+//
+// Grammatical gender for generating correct prose about the person in a
+// gendered language. Section 3.2 is explicit that this is a property of the
+// language, not a statement of the person's gender identity -- PRONOUNS
+// carries that -- and the two are deliberately separate properties.
+//
+// Cardinality * -- repeated, one per language, which is why LANGUAGE is on
+// the message rather than on Contact.
+//
+// Reference: RFC 9554 "vCard Format Extensions for JSContact", section 3.2.
+// https://www.rfc-editor.org/rfc/rfc9554.html#section-3.2
+message GrammaticalGender {
+  // The grammatical gender.
+  GrammaticalGenderKind kind = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // LANGUAGE parameter, RFC 6350 section 5.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.1>. The language this gender
+  // applies in, as a BCP 47 tag, RFC 5646 <https://www.rfc-editor.org/rfc/rfc5646.html>. Grammatical gender is
+  // language-specific, so the same person may carry several.
+  string language_code = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// GrammaticalGenderKind is the GRAMGENDER value set, RFC 9554 section 3.2 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.2>.
+//
+// Section 3.2 also permits IANA-registered tokens and x-names; an
+// unrecognised value arrives through ExtensionProperty rather than being
+// folded into one of these, which would assert something the vCard did not.
+//
+// Reference: RFC 9554 "vCard Format Extensions for JSContact", section 3.2.
+// https://www.rfc-editor.org/rfc/rfc9554.html#section-3.2
+enum GrammaticalGenderKind {
+  // Not specified.
+  GRAMMATICAL_GENDER_KIND_UNSPECIFIED = 0;
+
+  // Animate.
+  GRAMMATICAL_GENDER_KIND_ANIMATE = 1;
+
+  // Common, where a language merges masculine and feminine.
+  GRAMMATICAL_GENDER_KIND_COMMON = 2;
+
+  // Feminine.
+  GRAMMATICAL_GENDER_KIND_FEMININE = 3;
+
+  // Inanimate.
+  GRAMMATICAL_GENDER_KIND_INANIMATE = 4;
+
+  // Masculine.
+  GRAMMATICAL_GENDER_KIND_MASCULINE = 5;
+
+  // Neuter.
+  GRAMMATICAL_GENDER_KIND_NEUTER = 6;
+}

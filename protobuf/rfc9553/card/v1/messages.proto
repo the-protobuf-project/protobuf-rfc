@@ -1,0 +1,106 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "protobuf/rfc9553/card/v1/card.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Request message for Cards.GetCard, AIP-131 <https://aip.dev/131>.
+message GetCardRequest {
+  // Name of the Card to retrieve, "cards/{card}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "protobufrfc.dev/Card"}
+  ];
+}
+
+// Request message for Cards.ListCards, AIP-132 <https://aip.dev/132>.
+message ListCardsRequest {
+  // Maximum Cards to return. Defaults to 50, capped at 1000.
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ListCardsResponse.next_page_token.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160 <https://aip.dev/160>. `keywords` is the natural target;
+  // filtering inside a map-valued property is not, so a consumer needing that
+  // should expect to filter client-side.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include soft-deleted Cards in the result. AIP-164 <https://aip.dev/164>.
+  bool show_deleted = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Cards.ListCards, AIP-132 <https://aip.dev/132>.
+message ListCardsResponse {
+  // The Cards on this page.
+  repeated Card cards = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+}
+
+// Request message for Cards.CreateCard, AIP-133 <https://aip.dev/133>.
+message CreateCardRequest {
+  // The Card to create.
+  Card card = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Client-assigned id, becoming the last segment of the resource name. The
+  // server generates one when empty.
+  string card_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Cards.UpdateCard, AIP-134 <https://aip.dev/134>.
+message UpdateCardRequest {
+  // The Card to update. Its name field identifies the resource.
+  Card card = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Fields to update. An empty mask updates all mutable fields.
+  //
+  // A map-valued property named in the mask is replaced wholesale, not
+  // merged key by key. RFC 9553 section 1.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.4.1> makes those keys stable
+  // identifiers, so a caller amending one entry should read, change and send
+  // the whole map rather than relying on a merge that does not happen.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Cards.DeleteCard, AIP-135 <https://aip.dev/135>.
+message DeleteCardRequest {
+  // Name of the Card to delete, "cards/{card}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "protobufrfc.dev/Card"}
+  ];
+}
+
+// Request message for Cards.UndeleteCard, AIP-164 <https://aip.dev/164>.
+message UndeleteCardRequest {
+  // Name of the soft-deleted Card to restore, "cards/{card}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Card",
+    (buf.validate.field).string.pattern = "^cards/[^/]+$"
+  ];
+}

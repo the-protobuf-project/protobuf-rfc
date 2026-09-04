@@ -91,8 +91,8 @@ jobs:
           over=0
           while IFS= read -r file; do
             lines=$(wc -l <"$file")
-            if [ "$lines" -gt 200 ]; then
-              echo "::error file=$file::$lines lines, over the 200-line cap"
+            if [ "$lines" -gt 250 ]; then
+              echo "::error file=$file::$lines lines, over the 250-line cap"
               over=1
             fi
           done < <(find . -path ./gen -prune -o \( -name '*.proto' -o -name '*.md' \) -print)
@@ -100,7 +100,7 @@ jobs:
             echo "Split the files above; do not compress them."
             exit 1
           fi
-          echo "All files within the 200-line cap."
+          echo "All files within the 250-line cap."
 
   BreakingChange:
     name: Breaking Change

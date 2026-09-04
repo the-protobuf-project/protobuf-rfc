@@ -3,21 +3,21 @@
 
 syntax = "proto3";
 
-package protobuf.rfc6350.user.v1;
+package protobuf.rfc6350.vcard.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "ContactRelationProto";
-option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
 
 // Relation is the RELATED property, RFC 6350 section 6.6.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.6>.
 //
 // Not MEMBER (section 6.6.5 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.5>): MEMBER expresses a KIND=group vCard's
 // membership and is not modelled here at all, because it is the same problem
 // `Group` and `Membership` already solve in `rfc4519/v1` -- a KIND_GROUP
-// Contact's members belong in a Membership pointing at `users/{user}`, not in
+// Contact's members belong in a Membership pointing at `vcards/{vcard}`, not in
 // a second, parallel list on Contact. RELATED is a different, unaddressed
 // capability: a typed relationship between two arbitrary contacts, which
 // Membership's group-affiliation model does not express.

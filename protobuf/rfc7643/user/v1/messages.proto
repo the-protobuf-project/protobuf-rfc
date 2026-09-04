@@ -3,17 +3,17 @@
 
 syntax = "proto3";
 
-package protobuf.rfc6350.user.v1;
+package protobuf.rfc7643.user.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
-import "protobuf/rfc6350/user/v1/user.proto";
+import "protobuf/rfc7643/user/v1/user.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "MessagesProto";
-option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+option java_package = "io.github.theprotobufproject.protobuf.rfc7643.user.v1";
 
 // Request message for Users.GetUser, AIP-131 <https://aip.dev/131>.
 message GetUserRequest {
@@ -36,6 +36,12 @@ message ListUsersRequest {
   ];
 
   // Page token from a previous ListUsersResponse.next_page_token.
+  //
+  // AIP-158's opaque token, which is also how RFC 9865's cursor pagination
+  // is served: that document adds `cursor` and `nextCursor` to SCIM, and the
+  // two are the same mechanism under different names. Modelling both would
+  // give a caller two ways to page and no rule for choosing, so the AIP
+  // spelling is the one exposed and a SCIM front end maps onto it.
   string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
 
   // Filter expression, AIP-160 <https://aip.dev/160>.
@@ -88,7 +94,7 @@ message DeleteUserRequest {
   ];
 }
 
-// Request message for UndeleteUser, AIP-164 <https://aip.dev/164>.
+// Request message for Users.UndeleteUser, AIP-164 <https://aip.dev/164>.
 message UndeleteUserRequest {
   // Name of the soft-deleted user to restore, "users/{user}".
   string name = 1 [

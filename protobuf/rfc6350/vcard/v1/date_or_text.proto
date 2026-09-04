@@ -3,14 +3,14 @@
 
 syntax = "proto3";
 
-package protobuf.rfc6350.user.v1;
+package protobuf.rfc6350.vcard.v1;
 
 import "google/type/date.proto";
 import "google/type/datetime.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "DateOrTextProto";
-option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
 
 // DateOrText is vCard's DATE-AND-OR-TIME value type, RFC 6350 section 4.3.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-4.3.4>,
 // including the text alternative every property using it permits.

@@ -1,0 +1,101 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc6350.vcard.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "ContactNameProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
+
+// Name is the N property, RFC 6350 section 6.2.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.2>, as extended by RFC 9554
+// section 2.2 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.2>.
+//
+// RFC 6350 defined five components; RFC 9554 section 2.2 appends two more,
+// secondary surname and generation, so that names which distinguish a
+// paternal from a maternal surname, or carry "Jr"/"III" as a distinct
+// component rather than a honorific suffix, survive conversion to JSContact.
+// Component order in the wire format is the order of the fields here.
+//
+// Split into its own file rather than living in types.proto: rule 2 caps
+// every file at 200 lines and the phonetic parameters below do not fit there.
+//
+// Reference: RFC 6350 "vCard Format Specification", section 6.2.2.
+// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.2
+// Reference: RFC 9554 "vCard Format Extensions for JSContact", section 2.2.
+// https://www.rfc-editor.org/rfc/rfc9554.html#section-2.2
+message Name {
+  // Family names.
+  repeated string family_name = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Given names.
+  repeated string given_name = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Additional names, between given and family.
+  repeated string middle_names = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Honorific prefixes, e.g. "Dr".
+  repeated string honorific_prefixes = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // Honorific suffixes, e.g. "Jr", "PhD".
+  repeated string honorific_suffixes = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Secondary surname, RFC 9554 section 2.2 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.2>. The second of two family
+  // names in naming cultures that carry both, e.g. the maternal surname in
+  // Spanish practice. Distinct from a second entry in family_name, which
+  // says only that there are two and not which is which.
+  repeated string secondary_surnames = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // Generation, RFC 9554 section 2.2 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.2>, e.g. "Jr", "III". Separate from
+  // honorific_suffixes because a generation marker is part of the name
+  // rather than an honorific, and JSContact models the two distinctly.
+  repeated string generations = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // PHONETIC parameter, RFC 9554 section 4.6 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.6>. Names the notation this
+  // value is written in when it is a phonetic transcription rather than the
+  // name itself.
+  PhoneticSystem phonetic = 8 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // SCRIPT parameter, RFC 9554 section 4.8 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.8>. The ISO 15924 four-letter
+  // script code the value is written in. Required by section 4.6 when
+  // phonetic is PHONETIC_SYSTEM_SCRIPT, which names no notation of its own.
+  string script = 9 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^[A-Z][a-z]{3}$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+}
+
+// PhoneticSystem is the PHONETIC parameter, RFC 9554 section 4.6 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.6>.
+//
+// Applies to N and ADR, the two structured properties whose components a
+// reader may need to pronounce. Section 4.6 also permits IANA-registered
+// tokens; an unrecognised one arrives through ExtensionProperty rather than
+// being mapped to a value it does not mean.
+//
+// Reference: RFC 9554 "vCard Format Extensions for JSContact", section 4.6.
+// https://www.rfc-editor.org/rfc/rfc9554.html#section-4.6
+enum PhoneticSystem {
+  // Not specified.
+  PHONETIC_SYSTEM_UNSPECIFIED = 0;
+
+  // International Phonetic Alphabet.
+  PHONETIC_SYSTEM_IPA = 1;
+
+  // Hanyu Pinyin, for Mandarin Chinese.
+  PHONETIC_SYSTEM_PINY = 2;
+
+  // Jyutping, for Cantonese.
+  PHONETIC_SYSTEM_JYUT = 3;
+
+  // An unnamed system. Section 4.6 requires the SCRIPT parameter alongside
+  // this value, since the value itself names no notation.
+  PHONETIC_SYSTEM_SCRIPT = 4;
+}

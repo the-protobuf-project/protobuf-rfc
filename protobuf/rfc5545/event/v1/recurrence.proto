@@ -157,4 +157,34 @@ message Recurrence {
     (google.api.field_behavior) = OPTIONAL,
     (buf.validate.field).enum.defined_only = true
   ];
+
+  // RSCALE, RFC 7529 section 4 <https://www.rfc-editor.org/rfc/rfc7529.html#section-4>. The calendar system the rule is
+  // evaluated in, as a CLDR calendar name -- CHINESE, HEBREW, ISLAMIC-CIVIL,
+  // ETHIOPIC. Empty means Gregorian, which is RFC 5545's only option.
+  //
+  // Free text rather than an enum: section 4 defers the value set to the CLDR
+  // registry, which grows without an RFC, and permits experimental names
+  // besides. An enum here would reject values the RFC accepts.
+  string rscale = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // SKIP, RFC 7529 section 4 <https://www.rfc-editor.org/rfc/rfc7529.html#section-4>. What to do when an occurrence lands on a
+  // date the calendar system does not have. Section 4 requires this to be
+  // absent unless rscale is set.
+  RecurrenceSkip skip = 16 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // The leap-month half of BYMONTH, RFC 7529 section 4 <https://www.rfc-editor.org/rfc/rfc7529.html#section-4>.
+  //
+  // Section 4 extends BYMONTH so a month number may carry an "L" suffix,
+  // meaning the leap month of that number -- "5L" in a Hebrew or Chinese
+  // year that has one. google.type.Month is a plain 1-12 enum and cannot
+  // express the suffix, so the leap months are listed here instead of being
+  // lost. A month appearing in both fields means the rule matches the
+  // ordinary month and the leap month.
+  repeated google.type.Month leap_months = 17 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
 }

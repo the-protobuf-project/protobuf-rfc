@@ -1,0 +1,72 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "LinksProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Link is the LINK property, RFC 9253 section 8.2 <https://www.rfc-editor.org/rfc/rfc9253.html#section-8.2>.
+//
+// A reference to information related to the component. Section 8.2 gives it
+// three value types -- URI, UID and XML-REFERENCE -- and requires VALUE to
+// say which, so the oneof carries the same distinction rather than guessing
+// from the string's shape.
+//
+// This is deliberately not the same thing as ATTACH (RFC 5545 section 3.8.1.1
+// <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.1>). ATTACH
+// carries a document belonging to the event; LINK states a typed relationship
+// to something else, which is what `relation` names.
+//
+// Reference: RFC 9253 "Support for iCalendar Relationships", section 8.2.
+// https://www.rfc-editor.org/rfc/rfc9253.html#section-8.2
+message Link {
+  // Exactly one form, chosen by the VALUE parameter section 8.2 requires.
+  oneof value {
+    // VALUE=URI. The default form: a reference to an external resource.
+    string uri = 1 [
+      (buf.validate.field).string.uri = true,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+    ];
+
+    // VALUE=UID, RFC 9253 section 7.1 <https://www.rfc-editor.org/rfc/rfc9253.html#section-7.1>. The UID of another component in
+    // the same collection, rather than a resolvable address.
+    //
+    // Named ical_uid, not uid: AIP-148 <https://aip.dev/148> reserves `uid` for a server-assigned
+    // UUID4, and this is whatever the originating calendar chose. Same split
+    // as Event.ical_uid and Alarm.ical_uid.
+    string ical_uid = 2;
+
+    // VALUE=XML-REFERENCE, RFC 9253 section 7.2 <https://www.rfc-editor.org/rfc/rfc9253.html#section-7.2>. A URI with an XPointer
+    // anchor naming a fragment of an XML document.
+    string xml_reference = 3;
+  }
+
+  // LINKREL parameter, RFC 9253 section 6.1 <https://www.rfc-editor.org/rfc/rfc9253.html#section-6.1>. What the referenced data is
+  // to this component.
+  //
+  // Section 6.1 requires it on every LINK, and takes either a relation
+  // registered by RFC 8288 <https://www.rfc-editor.org/rfc/rfc8288.html> --
+  // "about", "describedby", "alternate" -- or an extension relation given as
+  // a URI. Free text for that reason: the IANA link-relation registry grows
+  // without an RFC, so an enum would reject values section 6.1 accepts.
+  string relation = 4 [(google.api.field_behavior) = REQUIRED];
+
+  // FMTTYPE parameter, RFC 5545 section 3.2.8 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.8>. The media type of the
+  // referenced data, as an RFC 6838 <https://www.rfc-editor.org/rfc/rfc6838.html> type/subtype.
+  string format_type = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // LABEL parameter, RFC 7986 section 6.1 <https://www.rfc-editor.org/rfc/rfc7986.html#section-6.1>. Human-readable text for the
+  // link, for display in place of the raw reference.
+  string label = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // LANGUAGE parameter, RFC 5545 section 3.2.10 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.10>. The language of
+  // `label`, as a BCP 47 tag, RFC 5646 <https://www.rfc-editor.org/rfc/rfc5646.html>.
+  string language_code = 7 [(google.api.field_behavior) = OPTIONAL];
+}

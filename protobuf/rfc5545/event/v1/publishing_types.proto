@@ -1,0 +1,176 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/type/latlng.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "PublishingTypesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// Location is the VLOCATION component, RFC 9073 section 7.2 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.2>.
+//
+// Structured location information, as opposed to Event.location, which is RFC
+// 5545 section 3.8.1.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.7>'s single free-text line. An event may have
+// several -- a venue, its car park, the station to arrive at -- and
+// `location_type` says which is which, so a client can route to the right one
+// rather than guessing from prose.
+//
+// Reference: RFC 9073 "Event Publishing Extensions to iCalendar", section 7.2.
+// https://www.rfc-editor.org/rfc/rfc9073.html#section-7.2
+message Location {
+  // UID, RFC 5545 section 3.8.4.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.7>. Required by RFC 9073 section 7.2 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.2>.
+  //
+  // Interchange identity, not ours -- rule 9's `<format>_uid` split, the same
+  // as Event.ical_uid and Alarm.ical_uid.
+  string ical_uid = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // NAME, RFC 7986 section 5.2 <https://www.rfc-editor.org/rfc/rfc7986.html#section-5.2>. What to call this place.
+  //
+  // Named display_name, not name: AIP-122 <https://aip.dev/122> reserves `name` for a resource
+  // identifier, and api-linter treats a message carrying one as a resource.
+  string display_name = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // DESCRIPTION, RFC 5545 section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>.
+  string description = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // LOCATION-TYPE, RFC 9073 section 6.1 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.1>. What kind of place this is,
+  // e.g. "venue", "parking", "restaurant".
+  //
+  // Free text rather than an enum: section 6.1 defers the value set to the
+  // IANA Location Types registry, which grows without an RFC, so an enum here
+  // would reject values the RFC accepts.
+  repeated string location_types = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // GEO, RFC 5545 section 3.8.1.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.6>. Coordinates for this place, as
+  // a latitude/longitude pair.
+  google.type.LatLng position = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // STRUCTURED-DATA, RFC 9073 section 6.6 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.6>. Machine-readable detail
+  // about the place, e.g. a schema.org Place object.
+  repeated StructuredData structured_data = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Resource is the VRESOURCE component, RFC 9073 section 7.3 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.3>.
+//
+// Something the event needs that is not a person and not a place: a
+// projector, a minibus, a signer. RFC 5545 section 3.8.1.10 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.10> already had a
+// free-text RESOURCES property; this is its structured replacement, and that
+// one is deliberately not modelled rather than carried alongside as a second
+// way to say the same thing.
+//
+// Reference: RFC 9073 "Event Publishing Extensions to iCalendar", section 7.3.
+// https://www.rfc-editor.org/rfc/rfc9073.html#section-7.3
+message Resource {
+  // UID, RFC 5545 section 3.8.4.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.7>. Required by RFC 9073 section 7.3 <https://www.rfc-editor.org/rfc/rfc9073.html#section-7.3>.
+  string ical_uid = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // NAME, RFC 7986 section 5.2 <https://www.rfc-editor.org/rfc/rfc7986.html#section-5.2>. See Location.display_name for why this
+  // is not called `name`.
+  string display_name = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // DESCRIPTION, RFC 5545 section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>.
+  string description = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // RESOURCE-TYPE, RFC 9073 section 6.3 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.3>, e.g. "projector", "room",
+  // "remote-conference-audio". Free text, for the same registry reason as
+  // Location.location_types.
+  repeated string resource_types = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // GEO, RFC 5545 section 3.8.1.6 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.6>. Where the resource is, when
+  // that differs from where the event is.
+  google.type.LatLng position = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // STRUCTURED-DATA, RFC 9073 section 6.6 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.6>.
+  repeated StructuredData structured_data = 6 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// StyledDescription is the STYLED-DESCRIPTION property, RFC 9073
+// section 6.5 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.5>.
+//
+// A rich-text description, where RFC 5545 section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>'s DESCRIPTION is
+// plain text only. Section 6.5 requires that a component carrying one also
+// carry a plain DESCRIPTION saying the same thing, so a client that cannot
+// render HTML is never left with nothing -- which is why this supplements
+// Event.description rather than replacing it.
+//
+// Reference: RFC 9073 "Event Publishing Extensions to iCalendar", section 6.5.
+// https://www.rfc-editor.org/rfc/rfc9073.html#section-6.5
+message StyledDescription {
+  // Exactly one form. Section 6.5 gives the value as TEXT by default, or a
+  // URI pointing at the styled document.
+  oneof value {
+    // The marked-up text itself.
+    string text = 1;
+
+    // A URI the styled description lives at.
+    string uri = 2 [
+      (buf.validate.field).string.uri = true,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+    ];
+  }
+
+  // FMTTYPE parameter, RFC 5545 section 3.2.8 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.8>. The markup's media
+  // type, RFC 6838 <https://www.rfc-editor.org/rfc/rfc6838.html>, e.g. "text/html". Section 6.5 defaults it to
+  // "text/plain", which would make the property pointless, so a producer of
+  // styled text sets this.
+  string format_type = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // DERIVED parameter, RFC 9073 section 5.3 <https://www.rfc-editor.org/rfc/rfc9073.html#section-5.3>. True when this was
+  // generated from the plain DESCRIPTION rather than authored, so a client
+  // knows it carries no information the plain text does not.
+  bool derived = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// StructuredData is the STRUCTURED-DATA property, RFC 9073 section 6.6 <https://www.rfc-editor.org/rfc/rfc9073.html#section-6.6>.
+//
+// Machine-readable data about the component, for a consumer that understands
+// the named schema -- a schema.org Event, a vCard, a JSON-LD graph. It is the
+// escape hatch for publishing detail iCalendar has no property for, and is
+// deliberately opaque here: this schema does not parse it.
+//
+// Reference: RFC 9073 "Event Publishing Extensions to iCalendar", section 6.6.
+// https://www.rfc-editor.org/rfc/rfc9073.html#section-6.6
+message StructuredData {
+  // Exactly one form, section 6.6: inline text, a URI, or base64 binary.
+  oneof value {
+    // The data inline, as text.
+    string text = 1;
+
+    // A URI the data lives at.
+    string uri = 2 [
+      (buf.validate.field).string.uri = true,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+    ];
+
+    // The data inline, as bytes. Section 6.6 carries this base64-encoded with
+    // ENCODING=BASE64 on the wire; it is decoded here, because a protobuf
+    // `bytes` field is already binary and re-encoding it would be a second
+    // representation of the same thing.
+    bytes binary = 3;
+  }
+
+  // FMTTYPE parameter, RFC 5545 section 3.2.8 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.8>. The data's media type,
+  // e.g. "application/ld+json".
+  string format_type = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCHEMA parameter, RFC 9073 section 5.2 <https://www.rfc-editor.org/rfc/rfc9073.html#section-5.2>. A URI naming the schema the
+  // data conforms to, e.g. "https://schema.org/Event". Without it the media
+  // type alone rarely says enough to parse the payload.
+  string schema = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+}

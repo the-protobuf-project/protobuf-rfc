@@ -1,0 +1,214 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc9553/card/v1/address.proto";
+import "protobuf/rfc9553/card/v1/calendaring.proto";
+import "protobuf/rfc9553/card/v1/contact_method.proto";
+import "protobuf/rfc9553/card/v1/name.proto";
+import "protobuf/rfc9553/card/v1/organization.proto";
+import "protobuf/rfc9553/card/v1/personal.proto";
+import "protobuf/rfc9553/card/v1/resource.proto";
+import "protobuf/rfc9553/card/v1/speech.proto";
+import "protobuf/rfc9553/card/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "CardProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Card is the JSContact Card object, RFC 9553 <https://www.rfc-editor.org/rfc/rfc9553.html> as amended by RFC 9982 <https://www.rfc-editor.org/rfc/rfc9982.html>.
+//
+// **The canonical contact model** under rule 14: what this schema stores.
+// protobuf.rfc6350.vcard.v1 remains a first-class package with its own CRUD,
+// but it is the legacy representation -- a vCard saved through that API is
+// converted here for storage and converted back on read, per RFC 9555.
+//
+// Most multi-valued properties are **maps keyed by a stable id**, not lists.
+// That is section 1.4.1's `Id` type and it is load-bearing: the key must
+// survive across versions of the same Card, because localizations and patches
+// address individual entries by it. A list would renumber on every edit and
+// break both.
+//
+// RFC 9982 makes `jscontact_uid` optional, where RFC 9553 required it -- the
+// later reading is the one implemented, because auto-generating an ephemeral
+// uid during vCard conversion is exactly what 9982 set out to stop.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data".
+// https://www.rfc-editor.org/rfc/rfc9553.html
+// Reference: RFC 9982 "JSContact Version 2.0".
+// https://www.rfc-editor.org/rfc/rfc9982.html
+message Card {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/Card"
+    pattern: "cards/{card}"
+    singular: "card"
+    plural: "cards"
+  };
+
+  // Resource name, "cards/{card}". Assigned by the server.
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^cards/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // The Card's own "uid", RFC 9553 section 2.1.9 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.9>, made optional by
+  // RFC 9982 <https://www.rfc-editor.org/rfc/rfc9982.html>.
+  //
+  // Interchange identity, distinct from `uid` above: it arrives inside an
+  // imported Card, is whatever the originating system chose, and must survive
+  // a round trip unchanged or every re-import duplicates the address book.
+  string jscontact_uid = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // "kind", section 2.1.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.4>. Absent means an individual.
+  Kind kind = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // "name", section 2.2.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.1>.
+  //
+  // Named `name_components`, not `name`: that is the resource name above, and
+  // a second field called `name` is not possible. The same rename the vCard
+  // package made for N.
+  Name name_components = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // "nicknames", section 2.2.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.2>.
+  map<string, Nickname> nicknames = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // "organizations", section 2.2.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.3>.
+  map<string, Organization> organizations = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // "speakToAs", section 2.2.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4>. See Speech for why it is renamed.
+  Speech speech = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // "titles", section 2.2.5 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.5>. Holds both vCard's TITLE and ROLE.
+  map<string, Title> titles = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // "emails", section 2.3.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.3.1>.
+  map<string, EmailAddress> emails = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // "onlineServices", section 2.3.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.3.2>. Holds both vCard's IMPP and
+  // RFC 9554's SOCIALPROFILE.
+  map<string, OnlineService> online_services = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // "phones", section 2.3.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.3.3>.
+  map<string, Phone> phones = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // "preferredLanguages", section 2.3.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.3.4>. Which languages the
+  // contact prefers to be addressed in; `language_code` below is what this
+  // Card's own text is written in.
+  map<string, LanguagePref> preferred_languages = 13 [(google.api.field_behavior) = OPTIONAL];
+
+  // "calendars", section 2.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.1>.
+  map<string, CalendarResource> calendars = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // "schedulingAddresses", section 2.4.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.4.2>.
+  map<string, SchedulingAddress> scheduling_addresses = 15 [(google.api.field_behavior) = OPTIONAL];
+
+  // "addresses", section 2.5.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1>.
+  map<string, Address> addresses = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // "cryptoKeys", section 2.6.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.6.1>.
+  map<string, CryptoKey> crypto_keys = 17 [(google.api.field_behavior) = OPTIONAL];
+
+  // "directories", section 2.6.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.6.2>.
+  map<string, Directory> directories = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  // "links", section 2.6.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.6.3>.
+  map<string, Link> links = 19 [(google.api.field_behavior) = OPTIONAL];
+
+  // "media", section 2.6.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.6.4>. Holds vCard's PHOTO, SOUND and LOGO.
+  map<string, Media> media = 20 [(google.api.field_behavior) = OPTIONAL];
+
+  // "anniversaries", section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>. Holds vCard's BDAY and
+  // ANNIVERSARY, and a death date neither had.
+  map<string, Anniversary> anniversaries = 21 [(google.api.field_behavior) = OPTIONAL];
+
+  // "keywords", section 2.8.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.2>. vCard's CATEGORIES.
+  //
+  // A flat list, not a map: section 2.8.2 types it `String[]`, and it is the
+  // natural AIP-160 <https://aip.dev/160> filter target -- `keywords:"vip"`.
+  repeated string keywords = 22 [(google.api.field_behavior) = OPTIONAL];
+
+  // "notes", section 2.8.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3>.
+  map<string, Note> notes = 23 [(google.api.field_behavior) = OPTIONAL];
+
+  // "personalInfo", section 2.8.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4>.
+  map<string, PersonalInfo> personal_info = 24 [(google.api.field_behavior) = OPTIONAL];
+
+  // "relatedTo", section 2.1.8 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.8>, keyed by the related entity's URI
+  // or uid. Named `relations` because AIP-140 <https://aip.dev/140> bans prepositions.
+  map<string, Relation> relations = 25 [(google.api.field_behavior) = OPTIONAL];
+
+  // "members", section 2.1.6 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.6>. The uids of the Cards in this group,
+  // meaningful only when `kind` is KIND_GROUP.
+  //
+  // A repeated string, not a map: section 2.1.6 types it `String[Boolean]`,
+  // a set whose values are always true, so the boolean carries nothing.
+  repeated string members = 26 [(google.api.field_behavior) = OPTIONAL];
+
+  // "language", section 2.1.5 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.5>. The language this Card's own
+  // human-readable text is written in, as a BCP 47 tag, RFC 5646 <https://www.rfc-editor.org/rfc/rfc5646.html>.
+  string language_code = 27 [(google.api.field_behavior) = OPTIONAL];
+
+  // "prodId", section 2.1.7 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.7>. What produced this Card, e.g. a
+  // vendor and version string. AIP-140 <https://aip.dev/140> requires the abbreviation `id` over
+  // `identifier`, so the RFC's own spelling survives only in this comment.
+  string product_id = 28 [(google.api.field_behavior) = OPTIONAL];
+
+  // "created", section 2.1.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.3>. When the *originating* system created
+  // the Card, distinct from `create_time` below, which is when this server
+  // first stored it. The same split as `uid` and `jscontact_uid`.
+  google.protobuf.Timestamp jscontact_create_time = 29 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // "updated", section 2.1.10 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.10>. When the originating system last
+  // changed the Card.
+  google.protobuf.Timestamp jscontact_update_time = 30 [(google.api.field_behavior) = OPTIONAL];
+
+  // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. Pass it back in an
+  // update or delete to make the write conditional.
+  string etag = 31 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this Card was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp delete_time = 32 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted Card is purged for good. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp expire_time = 33 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this Card was created here.
+  google.protobuf.Timestamp create_time = 34 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this Card was last modified here.
+  google.protobuf.Timestamp update_time = 35 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Properties this schema does not model, RFC 9553 section 1.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.3>, as raw
+  // JSON keyed by property name.
+  //
+  // This is also where RFC 9555 section 3 <https://www.rfc-editor.org/rfc/rfc9555.html#section-3>'s `vCardProps` lands: the vCard
+  // elements JSContact has no home for are carried here rather than dropped,
+  // which is what makes the round trip in rule 14's pipeline lossless.
+  map<string, string> jscontact_props = 36 [(google.api.field_behavior) = OPTIONAL];
+}

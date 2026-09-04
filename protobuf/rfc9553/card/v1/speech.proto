@@ -1,0 +1,104 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc9553/card/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "SpeechProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Speech is the Card "speakToAs" property, RFC 9553 section 2.2.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4>.
+//
+// How to refer to the contact in speech and prose. Named `Speech` rather than
+// the RFC's `SpeakToAs`: AIP-140 <https://aip.dev/140> bans prepositions in field names, so the
+// field cannot be `speak_to_as`, and a message whose name does not match its
+// field reads worse than one renamed honestly.
+//
+// Section 2.2.4 is explicit that grammatical gender "does not allow inferring
+// the gender identities or assigned sex of the contact" -- it is a property of
+// the language being written, and `pronouns` is the separate, self-reported
+// thing. The two are deliberately distinct fields here for that reason.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.4.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4
+message Speech {
+  // The grammatical gender to use in prose about the contact,
+  // section 2.2.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4>. A property of the language, not of the person.
+  GrammaticalGender grammatical_gender = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // The contact's pronouns, section 2.2.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4>, keyed by a stable id per
+  // section 1.4.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.4.1>.
+  map<string, Pronouns> pronouns = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Pronouns is one entry of Speech's "pronouns", RFC 9553 section 2.2.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4>.
+//
+// Free text, not an enumeration: section 2.2.4 types the value as a String
+// precisely because the set of pronouns is open and varies by language. A
+// closed enum here would reject valid input.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.4.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4
+message Pronouns {
+  // The pronouns themselves, section 2.2.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4>, e.g. "they/them".
+  // Mandatory.
+  string pronouns = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // When these pronouns are used, section 2.2.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4>.
+  repeated Context contexts = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // Preference, section 1.5.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.3>.
+  int32 pref = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// GrammaticalGender is a Speech "grammaticalGender" value, RFC 9553
+// section 2.2.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4>.
+//
+// The same six values RFC 9554 section 3.2 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.2> gives vCard's GRAMGENDER,
+// which is what makes that property convert without loss.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.2.4.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.2.4
+enum GrammaticalGender {
+  // Not specified.
+  GRAMMATICAL_GENDER_UNSPECIFIED = 0;
+
+  // Animate.
+  GRAMMATICAL_GENDER_ANIMATE = 1;
+
+  // Common, where a language merges masculine and feminine.
+  GRAMMATICAL_GENDER_COMMON = 2;
+
+  // Feminine.
+  GRAMMATICAL_GENDER_FEMININE = 3;
+
+  // Inanimate.
+  GRAMMATICAL_GENDER_INANIMATE = 4;
+
+  // Masculine.
+  GRAMMATICAL_GENDER_MASCULINE = 5;
+
+  // Neuter.
+  GRAMMATICAL_GENDER_NEUTER = 6;
+}

@@ -3,15 +3,15 @@
 
 syntax = "proto3";
 
-package protobuf.rfc6350.user.v1;
+package protobuf.rfc6350.vcard.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
-import "protobuf/rfc6350/user/v1/types.proto";
+import "protobuf/rfc6350/vcard/v1/types.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "ContactMethodProto";
-option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
 
 // Email is the EMAIL property, RFC 6350 section 6.4.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.2>.
 //
@@ -74,6 +74,58 @@ message Telephone {
 
   // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>.
   int32 pref = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+}
+
+// SocialProfile is the SOCIALPROFILE property, RFC 9554 section 3.5 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.5>.
+//
+// A presence on a social service. Section 3.5 gives the value type as URI by
+// default but permits TEXT, because a handle is not always resolvable to a
+// URI -- hence the oneof rather than a single string, which would have to
+// guess which it received.
+//
+// Distinct from InstantMessage (IMPP, RFC 6350 section 6.4.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.4.3>): IMPP
+// addresses a real-time messaging endpoint, this names a profile page or
+// account. A service that is both gets both properties, which is what
+// section 3.5 intends.
+//
+// Reference: RFC 9554 "vCard Format Extensions for JSContact", section 3.5.
+// https://www.rfc-editor.org/rfc/rfc9554.html#section-3.5
+message SocialProfile {
+  // Exactly one form. Section 3.5 defaults to URI and permits TEXT.
+  oneof value {
+    // The profile URI, e.g. "https://example.com/@jane".
+    string uri = 1 [
+      (buf.validate.field).string.uri = true,
+      (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+    ];
+
+    // A free-text handle, where no URI form exists.
+    string text = 2;
+  }
+
+  // SERVICE-TYPE parameter, RFC 9554 section 4.9 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.9>. The service's name as
+  // it is presented to users, e.g. "Mastodon". Free text: section 4.9
+  // registers no value list, because the set of services is open.
+  string service_type = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // USERNAME parameter, RFC 9554 section 4.10 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.10>. The account name on that
+  // service, for when the URI does not contain it in a recoverable form.
+  string username = 4 [(google.api.field_behavior) = OPTIONAL];
+
+  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
+  repeated Type types = 5 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>. 1 is most preferred, 100 least.
+  int32 pref = 6 [
     (google.api.field_behavior) = OPTIONAL,
     (buf.validate.field).int32 = {
       gte: 0

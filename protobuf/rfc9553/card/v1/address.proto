@@ -1,0 +1,195 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "protobuf/rfc9553/card/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "AddressProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Address is one entry of the Card "addresses" property, RFC 9553
+// section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>.
+//
+// Componentised the same way Name is, and for the same reason: RFC 6350
+// section 6.3.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.3.1>'s ADR is positional, so an address whose parts do not
+// map onto its seven slots loses them. RFC 9554 later back-ported these
+// components into vCard, which is what makes the conversion in RFC 9555
+// lossless in both directions.
+//
+// This is also why google.type.PostalAddress was rejected for this schema --
+// see docs/adding-data.md. That type is address_lines plus a region, and
+// cannot say which line is a floor and which is a landmark.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.5.1.1.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1
+message Address {
+  // The components in the order they should be read.
+  repeated AddressComponent components = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // Whether `components` is in a meaningful order, section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>.
+  bool is_ordered = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // ISO 3166-1 alpha-2 code, section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>, e.g. "GB". JSContact
+  // calls this `countryCode`; AIP-143 <https://aip.dev/143> requires the name `region_code` for an
+  // ISO 3166-1 value, so the RFC's term is recorded here instead.
+  //
+  // Separate from the `country` component: this is the machine-readable code
+  // for routing and validation, that one is the country as written on the
+  // envelope, and they are not always the same string.
+  string region_code = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^[A-Z]{2}$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // A "geo:" URI, RFC 5870 <https://www.rfc-editor.org/rfc/rfc5870.html>, section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>.
+  //
+  // A string, not google.type.LatLng: section 2.5.1.1 types this as a URI,
+  // and a geo: URI may carry a coordinate reference system and an
+  // uncertainty radius that a bare latitude/longitude pair would discard.
+  string coordinates = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // IANA time zone name for this address, section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>,
+  // e.g. "Europe/London".
+  string time_zone = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // When this address is used, section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>. Addresses accept
+  // CONTEXT_BILLING and CONTEXT_DELIVERY as well as the general contexts.
+  repeated Context contexts = 6 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).repeated.items.enum.defined_only = true
+  ];
+
+  // The whole address as a single string, newlines included, section
+  // 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>. This is what RFC 9554 section 4.5 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.5>'s LABEL parameter
+  // carries into vCard.
+  string full_address = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // The separator to put between components when none is given explicitly,
+  // section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>.
+  string default_separator = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // Preference among addresses, section 1.5.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.3>. 1 is most preferred,
+  // 100 least; zero means unset, not most-preferred.
+  int32 pref = 9 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 100
+    }
+  ];
+
+  // The script the phonetic components are written in, as an ISO 15924
+  // four-letter code, section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>.
+  string phonetic_script = 10 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.pattern = "^[A-Z][a-z]{3}$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // The notation the phonetic components use, section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1>.
+  PhoneticSystem phonetic_system = 11 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+}
+
+// AddressComponent is one typed part of an Address, RFC 9553
+// section 2.5.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.2>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.5.1.2.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.2
+message AddressComponent {
+  // The text of this component, section 2.5.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.2>. Mandatory.
+  string value = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // What part of the address this is, section 2.5.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.2>. Mandatory.
+  AddressComponentKind kind = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // A phonetic transcription of `value`, section 2.5.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.2>.
+  string phonetic = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// AddressComponentKind is an address component's "kind", RFC 9553
+// section 2.5.1.2 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.2>.
+//
+// The seventeen values section 2.5.1.2 registers. RFC 9554 section 2.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-2.1>
+// adds the same set to vCard's ADR, which is how the two stay convertible.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.5.1.2.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.2
+enum AddressComponentKind {
+  // Not specified. Section 2.5.1.2 makes `kind` mandatory, so this is not a
+  // legal value on the wire.
+  ADDRESS_COMPONENT_KIND_UNSPECIFIED = 0;
+
+  // Room, suite number or identifier.
+  ADDRESS_COMPONENT_KIND_ROOM = 1;
+
+  // Apartment number or extension designation.
+  ADDRESS_COMPONENT_KIND_APARTMENT = 2;
+
+  // Building floor or level.
+  ADDRESS_COMPONENT_KIND_FLOOR = 3;
+
+  // Building, tower or condominium.
+  ADDRESS_COMPONENT_KIND_BUILDING = 4;
+
+  // Street number, which need not be numeric.
+  ADDRESS_COMPONENT_KIND_NUMBER = 5;
+
+  // Street name.
+  ADDRESS_COMPONENT_KIND_NAME = 6;
+
+  // Block name or number.
+  ADDRESS_COMPONENT_KIND_BLOCK = 7;
+
+  // Subdistrict, ward or other division below district.
+  ADDRESS_COMPONENT_KIND_SUBDISTRICT = 8;
+
+  // District or county.
+  ADDRESS_COMPONENT_KIND_DISTRICT = 9;
+
+  // City or locality.
+  ADDRESS_COMPONENT_KIND_LOCALITY = 10;
+
+  // State, province or region.
+  ADDRESS_COMPONENT_KIND_REGION = 11;
+
+  // Postal or ZIP code.
+  ADDRESS_COMPONENT_KIND_POSTCODE = 12;
+
+  // Country name as written.
+  ADDRESS_COMPONENT_KIND_COUNTRY = 13;
+
+  // Cardinal direction or quadrant, e.g. "NW".
+  ADDRESS_COMPONENT_KIND_DIRECTION = 14;
+
+  // A nearby landmark, for orientation where numbering is sparse.
+  ADDRESS_COMPONENT_KIND_LANDMARK = 15;
+
+  // Post office box.
+  ADDRESS_COMPONENT_KIND_POST_OFFICE_BOX = 16;
+
+  // Literal text to place between the components either side of it.
+  ADDRESS_COMPONENT_KIND_SEPARATOR = 17;
+}

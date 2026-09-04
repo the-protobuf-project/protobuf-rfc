@@ -1,0 +1,208 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/protobuf/timestamp.proto";
+import "google/type/date.proto";
+import "protobuf/rfc9553/card/v1/address.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "PersonalProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Anniversary is one entry of the Card "anniversaries" property, RFC 9553
+// section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>.
+//
+// Collapses vCard's BDAY (RFC 6350 section 6.2.5 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.5>) and ANNIVERSARY
+// (section 6.2.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.6>) into one object distinguished by `kind`, and adds
+// a death date those two had no property for.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.8.1.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1
+message Anniversary {
+  // Which anniversary this is, section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>. Mandatory.
+  AnniversaryKind kind = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // When it falls, section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>. Mandatory.
+  //
+  // Named `date_value`, not the RFC's `date`: AIP-142 <https://aip.dev/142> reads a bare `date`
+  // as a timestamp field and requires it to be a google.protobuf.Timestamp,
+  // which this deliberately is not -- a partial date is the common case.
+  AnniversaryDate date_value = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Where it happened, section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>, e.g. a place of birth.
+  Address place = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// AnniversaryDate is an Anniversary's "date", RFC 9553 section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>.
+//
+// Section 2.8.1 types it `PartialDate|Timestamp`, defaulting to PartialDate.
+// The distinction is not cosmetic: a birthday is very often a day and month
+// with no year, and forcing one would invent information the contact did not
+// give.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.8.1.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1
+message AnniversaryDate {
+  // Exactly one form, section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>.
+  oneof value {
+    // A PartialDate, the default form.
+    //
+    // google.type.Date, because it already means exactly this: zero in any
+    // of year, month or day means that part is not given, which is what
+    // "partial" is. A google.protobuf.Timestamp cannot express it at all.
+    google.type.Date partial_date = 1;
+
+    // A Timestamp: a complete instant in UTC. The RFC names this property
+    // `utc`; AIP-142 <https://aip.dev/142> requires a Timestamp field to end in `_time`.
+    google.protobuf.Timestamp utc_time = 2;
+  }
+
+  // The calendar system the date occurs in, section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>, lowercase,
+  // e.g. "hebrew". A CLDR calendar name, the same registry RFC 7529 <https://www.rfc-editor.org/rfc/rfc7529.html> uses
+  // for iCalendar's RSCALE.
+  //
+  // Note what section 2.8.1 requires: `partial_date` stays in the *Gregorian*
+  // calendar regardless, and this names the system the date is meaningful in.
+  // Storing the converted date instead would lose the original.
+  string calendar_scale = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Note is one entry of the Card "notes" property, RFC 9553 section 2.8.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.8.3.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3
+message Note {
+  // The note's text, section 2.8.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3>. Mandatory.
+  string note = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // When the note was written, section 2.8.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3>. This is the
+  // originating system's timestamp, not ours -- see Card.jscontact_create_time
+  // for the same distinction at the document level.
+  google.protobuf.Timestamp note_create_time = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Who wrote it, section 2.8.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3>.
+  Author author = 3 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Author is a Note's "author", RFC 9553 section 2.8.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3>.
+//
+// Section 2.8.3 requires at least one property other than @type to be set;
+// that is a message-level rule and is not expressed as a buf.validate CEL
+// constraint, because no gate here checks CEL -- see docs/conventions.md
+// rule 12.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.8.3.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3
+message Author {
+  // The author's name, section 2.8.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3>. Named `display_name` because
+  // AIP-122 <https://aip.dev/122> restricts the `_name` suffix and a bare `name` would make
+  // api-linter read this message as a resource.
+  string display_name = 1 [(google.api.field_behavior) = OPTIONAL];
+
+  // A URI identifying the author, section 2.8.3 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.3>.
+  string uri = 2 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+}
+
+// PersonalInfo is one entry of the Card "personalInfo" property, RFC 9553
+// section 2.8.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.8.4.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4
+message PersonalInfo {
+  // What the information is about, section 2.8.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4>. Mandatory.
+  PersonalInfoKind kind = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).enum = {
+      defined_only: true
+      not_in: [0]
+    }
+  ];
+
+  // The subject itself, section 2.8.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4>, e.g. "chess". Mandatory.
+  string value = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // How much of it the contact has, section 2.8.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4>.
+  PersonalInfoLevel level = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+}
+
+// AnniversaryKind is an Anniversary "kind", RFC 9553 section 2.8.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.8.1.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.1
+enum AnniversaryKind {
+  // Not specified. Section 2.8.1 makes `kind` mandatory.
+  ANNIVERSARY_KIND_UNSPECIFIED = 0;
+
+  // A birthday. vCard's BDAY.
+  ANNIVERSARY_KIND_BIRTH = 1;
+
+  // A deathday. vCard has no equivalent property.
+  ANNIVERSARY_KIND_DEATH = 2;
+
+  // A wedding day. vCard's ANNIVERSARY.
+  ANNIVERSARY_KIND_WEDDING = 3;
+}
+
+// PersonalInfoKind is a PersonalInfo "kind", RFC 9553 section 2.8.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.8.4.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4
+enum PersonalInfoKind {
+  // Not specified. Section 2.8.4 makes `kind` mandatory.
+  PERSONAL_INFO_KIND_UNSPECIFIED = 0;
+
+  // A field the contact is knowledgeable in.
+  PERSONAL_INFO_KIND_EXPERTISE = 1;
+
+  // Something the contact does for pleasure.
+  PERSONAL_INFO_KIND_HOBBY = 2;
+
+  // Something the contact is interested in without practising.
+  PERSONAL_INFO_KIND_INTEREST = 3;
+}
+
+// PersonalInfoLevel is a PersonalInfo "level", RFC 9553 section 2.8.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4>.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.8.4.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.8.4
+enum PersonalInfoLevel {
+  // Not specified.
+  PERSONAL_INFO_LEVEL_UNSPECIFIED = 0;
+
+  // Beginner.
+  PERSONAL_INFO_LEVEL_BEGINNER = 1;
+
+  // Intermediate.
+  PERSONAL_INFO_LEVEL_INTERMEDIATE = 2;
+
+  // Advanced.
+  PERSONAL_INFO_LEVEL_ADVANCED = 3;
+}

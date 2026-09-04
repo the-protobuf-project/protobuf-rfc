@@ -78,7 +78,7 @@ message Project {
   //
   // Typed as any resource rather than a User, matching Membership.member.
   // An owner may be a person or a group, and naming
-  // protobufrfc.dev/User here would make a native package depend on RFC 6350
+  // protobufrfc.dev/Vcard here would make a native package depend on RFC 6350
   // for its meaning without gaining anything.
   string owner = 5 [
     (google.api.field_behavior) = OPTIONAL,

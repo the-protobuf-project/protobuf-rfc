@@ -1,0 +1,105 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc7643.group.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/resource.proto";
+import "google/protobuf/field_mask.proto";
+import "protobuf/rfc7643/group/v1/group.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "MessagesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc7643.group.v1";
+
+// Request message for Groups.GetGroup, AIP-131 <https://aip.dev/131>.
+message GetGroupRequest {
+  // Name of the group to retrieve, "groups/{group}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "protobufrfc.dev/Group"}
+  ];
+}
+
+// Request message for Groups.ListGroups, AIP-132 <https://aip.dev/132>.
+message ListGroupsRequest {
+  // Maximum groups to return. Defaults to 50, capped at 1000.
+  int32 page_size = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 1000
+    }
+  ];
+
+  // Page token from a previous ListGroupsResponse.next_page_token. See
+  // protobuf.rfc7643.user.v1.ListUsersRequest.page_token for why RFC 9865's
+  // cursor is served through this rather than alongside it.
+  string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
+
+  // Filter expression, AIP-160 <https://aip.dev/160>.
+  string filter = 3 [(google.api.field_behavior) = OPTIONAL];
+
+  // Include soft-deleted groups in the result. AIP-164 <https://aip.dev/164>.
+  bool show_deleted = 4 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Response message for Groups.ListGroups, AIP-132 <https://aip.dev/132>.
+message ListGroupsResponse {
+  // The groups on this page.
+  repeated Group groups = 1;
+
+  // Token for the next page, empty when this is the last page.
+  string next_page_token = 2;
+}
+
+// Request message for Groups.CreateGroup, AIP-133 <https://aip.dev/133>.
+message CreateGroupRequest {
+  // The group to create.
+  Group group = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Client-assigned id, becoming the last segment of the resource name. The
+  // server generates one when empty.
+  string group_id = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Groups.UpdateGroup, AIP-134 <https://aip.dev/134>.
+message UpdateGroupRequest {
+  // The group to update. Its name field identifies the resource.
+  Group group = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).required = true
+  ];
+
+  // Fields to update. An empty mask updates all mutable fields.
+  //
+  // Naming `members` replaces the membership list wholesale. RFC 7643
+  // section 4.2 makes each member's sub-attributes immutable, so there is
+  // nothing to merge into -- a membership is added or removed, never edited.
+  google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
+}
+
+// Request message for Groups.DeleteGroup, AIP-135 <https://aip.dev/135>.
+message DeleteGroupRequest {
+  // Name of the group to delete, "groups/{group}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference) = {type: "protobufrfc.dev/Group"}
+  ];
+}
+
+// Request message for Groups.UndeleteGroup, AIP-164 <https://aip.dev/164>.
+message UndeleteGroupRequest {
+  // Name of the soft-deleted group to restore, "groups/{group}".
+  string name = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Group",
+    (buf.validate.field).string.pattern = "^groups/[^/]+$"
+  ];
+}

@@ -22,23 +22,23 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc4519.membership.
 service Memberships {
   // Retrieves one membership.
   //
-  //   GET /v1/{name=groups/*/memberships/*}
+  //   GET /v1/{name=ldapGroups/*/memberships/*}
   //
   // Safe and idempotent. Returns the resource as stored; no field is computed
   // per-caller. Read the `etag` here and pass it back on update or delete to
   // make the write conditional.
   //
   //   NOT_FOUND          no such membership
-  //   INVALID_ARGUMENT   name does not match groups/*/memberships/*
+  //   INVALID_ARGUMENT   name does not match ldapGroups/*/memberships/*
   //   PERMISSION_DENIED  caller may not read it
   rpc GetMembership(GetMembershipRequest) returns (Membership) {
-    option (google.api.http) = {get: "/v1/{name=groups/*/memberships/*}"};
+    option (google.api.http) = {get: "/v1/{name=ldapGroups/*/memberships/*}"};
     option (google.api.method_signature) = "name";
   }
 
   // Lists memberships.
   //
-  //   GET /v1/{parent=groups/*}/memberships
+  //   GET /v1/{parent=ldapGroups/*}/memberships
   //
   // Paginated per AIP-158: pass `page_size` (defaults to 50, capped at 1000)
   // and the `next_page_token` from the previous response. An empty
@@ -54,13 +54,13 @@ service Memberships {
   //   INVALID_ARGUMENT   malformed filter, or page_size out of range
   //   PERMISSION_DENIED  caller may not list this collection
   rpc ListMemberships(ListMembershipsRequest) returns (ListMembershipsResponse) {
-    option (google.api.http) = {get: "/v1/{parent=groups/*}/memberships"};
+    option (google.api.http) = {get: "/v1/{parent=ldapGroups/*}/memberships"};
     option (google.api.method_signature) = "parent";
   }
 
   // Creates a membership.
   //
-  //   POST /v1/{parent=groups/*}/memberships
+  //   POST /v1/{parent=ldapGroups/*}/memberships
   //   body: the membership itself
   //
   // Server-assigned fields on the request body are ignored: `name`, `uid`,
@@ -76,7 +76,7 @@ service Memberships {
   //   PERMISSION_DENIED  caller may not create here
   rpc CreateMembership(CreateMembershipRequest) returns (Membership) {
     option (google.api.http) = {
-      post: "/v1/{parent=groups/*}/memberships"
+      post: "/v1/{parent=ldapGroups/*}/memberships"
       body: "membership"
     };
     option (google.api.method_signature) = "parent,membership,membership_id";
@@ -84,7 +84,7 @@ service Memberships {
 
   // Updates a membership.
   //
-  //   PATCH /v1/{membership.name=groups/*/memberships/*}
+  //   PATCH /v1/{membership.name=ldapGroups/*/memberships/*}
   //   body: the membership itself
   //
   // A partial update: only fields named in `update_mask` are written. An
@@ -100,7 +100,7 @@ service Memberships {
   //   PERMISSION_DENIED  caller may not modify it
   rpc UpdateMembership(UpdateMembershipRequest) returns (Membership) {
     option (google.api.http) = {
-      patch: "/v1/{membership.name=groups/*/memberships/*}"
+      patch: "/v1/{membership.name=ldapGroups/*/memberships/*}"
       body: "membership"
     };
     option (google.api.method_signature) = "membership,update_mask";
@@ -108,7 +108,7 @@ service Memberships {
 
   // Deletes a membership.
   //
-  //   DELETE /v1/{name=groups/*/memberships/*}
+  //   DELETE /v1/{name=ldapGroups/*/memberships/*}
   //
   // Permanent. A membership is already a revocable edge, so there is nothing a
   // soft delete would add.
@@ -120,7 +120,7 @@ service Memberships {
   //   ABORTED            etag does not match
   //   PERMISSION_DENIED  caller may not delete it
   rpc DeleteMembership(DeleteMembershipRequest) returns (google.protobuf.Empty) {
-    option (google.api.http) = {delete: "/v1/{name=groups/*/memberships/*}"};
+    option (google.api.http) = {delete: "/v1/{name=ldapGroups/*/memberships/*}"};
     option (google.api.method_signature) = "name";
   }
 }

@@ -1,0 +1,76 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc5545.event.v1;
+
+option java_multiple_files = true;
+option java_outer_classname = "AlarmTypesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc5545.event.v1";
+
+// AlarmAction is the ACTION property, RFC 5545 section 3.8.6.1 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.1>.
+//
+// RFC 2445 also defined PROCEDURE, which ran an arbitrary program on the
+// viewer's machine. RFC 5545 dropped it, and it is not modelled here.
+//
+// This file holds the VALARM enums, split out of alarm.proto because rule 2
+// caps a file at 200 lines and RFC 9074's additions to Alarm did not fit
+// alongside them.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.8.6.1.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.6.1
+enum AlarmAction {
+  // Not specified. Invalid in an alarm; ACTION is mandatory.
+  ALARM_ACTION_UNSPECIFIED = 0;
+
+  // AUDIO. Play a sound.
+  ALARM_ACTION_AUDIO = 1;
+
+  // DISPLAY. Show description as text.
+  ALARM_ACTION_DISPLAY = 2;
+
+  // EMAIL. Send description to attendees under subject summary.
+  ALARM_ACTION_EMAIL = 3;
+}
+
+// TriggerRelation is the RELATED parameter, RFC 5545 section 3.2.14 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14>.
+//
+// Reference: RFC 5545 "Internet Calendaring and Scheduling Core Object Specification (iCalendar)", section 3.2.14.
+// https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14
+enum TriggerRelation {
+  // Not specified; treat as TRIGGER_RELATION_START, the default in
+  // section 3.2.14 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.2.14>.
+  TRIGGER_RELATION_UNSPECIFIED = 0;
+
+  // START. Offset counts from the component's start.
+  TRIGGER_RELATION_START = 1;
+
+  // END. Offset counts from the component's end.
+  TRIGGER_RELATION_END = 2;
+}
+
+// Proximity is the PROXIMITY property, RFC 9074 section 8.1 <https://www.rfc-editor.org/rfc/rfc9074.html#section-8.1>.
+//
+// Which location change fires the alarm. Section 8.1 also permits
+// IANA-registered tokens and x-names; an unrecognised value arrives through
+// ExtensionProperty rather than being folded into one of these.
+//
+// Reference: RFC 9074 "\"VALARM\" Extension for iCalendar", section 8.1.
+// https://www.rfc-editor.org/rfc/rfc9074.html#section-8.1
+enum Proximity {
+  // Not specified.
+  PROXIMITY_UNSPECIFIED = 0;
+
+  // Fires on arriving at the location.
+  PROXIMITY_ARRIVE = 1;
+
+  // Fires on leaving the location.
+  PROXIMITY_DEPART = 2;
+
+  // Fires on connecting to the location, e.g. joining its network.
+  PROXIMITY_CONNECT = 3;
+
+  // Fires on disconnecting from the location.
+  PROXIMITY_DISCONNECT = 4;
+}

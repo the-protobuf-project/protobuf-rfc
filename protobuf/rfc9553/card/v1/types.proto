@@ -1,0 +1,93 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc9553.card.v1;
+
+option java_multiple_files = true;
+option java_outer_classname = "TypesProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc9553.card.v1";
+
+// Kind is the Card "kind" property, RFC 9553 section 2.1.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.4>.
+//
+// What the Card describes. Section 2.1.4 also permits vendor-specific values;
+// an unrecognised one arrives through `jscontact_props` rather than being
+// folded into one of these.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 2.1.4.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-2.1.4
+enum Kind {
+  // Not specified. Section 2.1.4 defaults an absent kind to "individual".
+  KIND_UNSPECIFIED = 0;
+
+  // A single person.
+  KIND_INDIVIDUAL = 1;
+
+  // A group of people or entities, whose members are in `members`.
+  KIND_GROUP = 2;
+
+  // An organization.
+  KIND_ORG = 3;
+
+  // A named location.
+  KIND_LOCATION = 4;
+
+  // A device, e.g. an appliance or a vehicle.
+  KIND_DEVICE = 5;
+
+  // A software application.
+  KIND_APPLICATION = 6;
+}
+
+// Context is the "contexts" property shared by most contact information,
+// RFC 9553 section 1.5.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.1>.
+//
+// When a piece of contact information is appropriate to use. JSContact types
+// this as `String[Boolean]` -- a JSON object whose values are always `true` --
+// which is a set written as a map. It is modelled here as a repeated enum,
+// because the boolean carries no information: a context is present or it is
+// not, and a `false` value has no defined meaning in section 1.5.1.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 1.5.1.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.1
+enum Context {
+  // Not specified.
+  CONTEXT_UNSPECIFIED = 0;
+
+  // Private life.
+  CONTEXT_PRIVATE = 1;
+
+  // Professional life.
+  CONTEXT_WORK = 2;
+
+  // Billing, for an address. Section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1> defines it for
+  // addresses only.
+  CONTEXT_BILLING = 3;
+
+  // Delivery, for an address. Section 2.5.1.1 <https://www.rfc-editor.org/rfc/rfc9553.html#section-2.5.1.1> defines it for
+  // addresses only.
+  CONTEXT_DELIVERY = 4;
+}
+
+// PhoneticSystem is the "phoneticSystem" property, RFC 9553 section 1.5.4 <https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.4>.
+//
+// The notation a phonetic transcription is written in, on a Name or an
+// Address. The same value set RFC 9554 section 4.6 <https://www.rfc-editor.org/rfc/rfc9554.html#section-4.6> gives vCard, which
+// is what makes that half of the conversion lossless.
+//
+// Reference: RFC 9553 "JSContact: A JSON Representation of Contact Data", section 1.5.4.
+// https://www.rfc-editor.org/rfc/rfc9553.html#section-1.5.4
+enum PhoneticSystem {
+  // Not specified.
+  PHONETIC_SYSTEM_UNSPECIFIED = 0;
+
+  // International Phonetic Alphabet.
+  PHONETIC_SYSTEM_IPA = 1;
+
+  // Hanyu Pinyin, for Mandarin Chinese.
+  PHONETIC_SYSTEM_PINY = 2;
+
+  // Jyutping, for Cantonese.
+  PHONETIC_SYSTEM_JYUT = 3;
+}

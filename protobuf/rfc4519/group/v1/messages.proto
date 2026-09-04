@@ -9,24 +9,24 @@ import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "google/api/resource.proto";
 import "google/protobuf/field_mask.proto";
-import "protobuf/rfc4519/group/v1/group.proto";
+import "protobuf/rfc4519/group/v1/ldap_group.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "MessagesProto";
 option java_package = "io.github.theprotobufproject.protobuf.rfc4519.group.v1";
 
-// Request message for Groups.GetGroup, AIP-131 <https://aip.dev/131>.
-message GetGroupRequest {
-  // Name of the group to retrieve, "groups/{group}".
+// Request message for LdapGroups.GetLdapGroup, AIP-131 <https://aip.dev/131>.
+message GetLdapGroupRequest {
+  // Name of the group to retrieve, "ldapGroups/{ldap_group}".
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "protobufrfc.dev/Group",
-    (buf.validate.field).string.pattern = "^groups/[^/]+$"
+    (google.api.resource_reference).type = "protobufrfc.dev/LdapGroup",
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+$"
   ];
 }
 
-// Request message for Groups.ListGroups, AIP-132 <https://aip.dev/132>.
-message ListGroupsRequest {
+// Request message for LdapGroups.ListLdapGroups, AIP-132 <https://aip.dev/132>.
+message ListLdapGroupsRequest {
   // Maximum groups to return. Defaults to 50, capped at 1000.
   int32 page_size = 1 [
     (google.api.field_behavior) = OPTIONAL,
@@ -36,7 +36,7 @@ message ListGroupsRequest {
     }
   ];
 
-  // Page token from a previous ListGroupsResponse.next_page_token.
+  // Page token from a previous ListLdapGroupsResponse.next_page_token.
   string page_token = 2 [(google.api.field_behavior) = OPTIONAL];
 
   // Filter expression, AIP-160 <https://aip.dev/160>.
@@ -46,32 +46,32 @@ message ListGroupsRequest {
   bool show_deleted = 4 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Response message for Groups.ListGroups, AIP-132 <https://aip.dev/132>.
-message ListGroupsResponse {
+// Response message for LdapGroups.ListLdapGroups, AIP-132 <https://aip.dev/132>.
+message ListLdapGroupsResponse {
   // The groups on this page.
-  repeated Group groups = 1;
+  repeated LdapGroup ldap_groups = 1;
 
   // Token for the next page, empty when this is the last page.
   string next_page_token = 2;
 }
 
-// Request message for Groups.CreateGroup, AIP-133 <https://aip.dev/133>.
-message CreateGroupRequest {
+// Request message for LdapGroups.CreateLdapGroup, AIP-133 <https://aip.dev/133>.
+message CreateLdapGroupRequest {
   // The group to create.
-  Group group = 1 [
+  LdapGroup ldap_group = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
 
   // Client-assigned id, becoming the last segment of the resource name. The
   // server generates one when empty.
-  string group_id = 2 [(google.api.field_behavior) = OPTIONAL];
+  string ldap_group_id = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Request message for Groups.UpdateGroup, AIP-134 <https://aip.dev/134>.
-message UpdateGroupRequest {
+// Request message for LdapGroups.UpdateLdapGroup, AIP-134 <https://aip.dev/134>.
+message UpdateLdapGroupRequest {
   // The group to update. Its name field identifies the resource.
-  Group group = 1 [
+  LdapGroup ldap_group = 1 [
     (google.api.field_behavior) = REQUIRED,
     (buf.validate.field).required = true
   ];
@@ -80,30 +80,30 @@ message UpdateGroupRequest {
   google.protobuf.FieldMask update_mask = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Request message for Groups.DeleteGroup, AIP-135 <https://aip.dev/135>.
-message DeleteGroupRequest {
-  // Name of the group to delete, "groups/{group}".
+// Request message for LdapGroups.DeleteLdapGroup, AIP-135 <https://aip.dev/135>.
+message DeleteLdapGroupRequest {
+  // Name of the group to delete, "ldapGroups/{ldap_group}".
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "protobufrfc.dev/Group",
-    (buf.validate.field).string.pattern = "^groups/[^/]+$"
+    (google.api.resource_reference).type = "protobufrfc.dev/LdapGroup",
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+$"
   ];
 
   // Delete the group's memberships along with it.
   //
-  // Required by AIP-135 <https://aip.dev/135> because Group has child resources. Without it the
+  // Required by AIP-135 <https://aip.dev/135> because LdapGroup has child resources. Without it the
   // request fails on a non-empty group, which is the safer default: a group
   // is usually deleted because it is obsolete, and silently revoking every
   // membership is not something to do by omission.
   bool force = 2 [(google.api.field_behavior) = OPTIONAL];
 }
 
-// Request message for UndeleteGroup, AIP-164 <https://aip.dev/164>.
-message UndeleteGroupRequest {
-  // Name of the soft-deleted group to restore, "groups/{group}".
+// Request message for UndeleteLdapGroup, AIP-164 <https://aip.dev/164>.
+message UndeleteLdapGroupRequest {
+  // Name of the soft-deleted group to restore, "ldapGroups/{ldap_group}".
   string name = 1 [
     (google.api.field_behavior) = REQUIRED,
-    (google.api.resource_reference).type = "protobufrfc.dev/Group",
-    (buf.validate.field).string.pattern = "^groups/[^/]+$"
+    (google.api.resource_reference).type = "protobufrfc.dev/LdapGroup",
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+$"
   ];
 }

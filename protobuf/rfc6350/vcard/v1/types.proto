@@ -3,83 +3,14 @@
 
 syntax = "proto3";
 
-package protobuf.rfc6350.user.v1;
+package protobuf.rfc6350.vcard.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "TypesProto";
-option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
-
-// Name is the N property, RFC 6350 section 6.2.2 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.2>.
-//
-// Each component is repeated because the RFC allows comma-separated values
-// within a single component.
-//
-// Reference: RFC 6350 "vCard Format Specification", section 6.2.2.
-// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.2
-message Name {
-  // Family names.
-  repeated string family_name = 1 [(google.api.field_behavior) = OPTIONAL];
-
-  // Given names.
-  repeated string given_name = 2 [(google.api.field_behavior) = OPTIONAL];
-
-  // Additional names, between given and family.
-  repeated string middle_names = 3 [(google.api.field_behavior) = OPTIONAL];
-
-  // Honorific prefixes, e.g. "Dr".
-  repeated string honorific_prefixes = 4 [(google.api.field_behavior) = OPTIONAL];
-
-  // Honorific suffixes, e.g. "Jr", "PhD".
-  repeated string honorific_suffixes = 5 [(google.api.field_behavior) = OPTIONAL];
-}
-
-// Address is the ADR property, RFC 6350 section 6.3.1 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.3.1>.
-//
-// Reference: RFC 6350 "vCard Format Specification", section 6.3.1.
-// https://www.rfc-editor.org/rfc/rfc6350.html#section-6.3.1
-message Address {
-  // Post office box. Section 6.3.1 requires the component to exist in the
-  // structure but SHOULD be empty in new vCards; kept so a parsed vCard
-  // round-trips without silently dropping data.
-  repeated string post_office_box = 1 [(google.api.field_behavior) = OPTIONAL];
-
-  // Extended address. Same deprecation caveat as post_office_box.
-  repeated string extended_addresses = 2 [(google.api.field_behavior) = OPTIONAL];
-
-  // Street address.
-  repeated string street_addresses = 3 [(google.api.field_behavior) = OPTIONAL];
-
-  // City or locality.
-  repeated string localities = 4 [(google.api.field_behavior) = OPTIONAL];
-
-  // State, province or region.
-  repeated string regions = 5 [(google.api.field_behavior) = OPTIONAL];
-
-  // Postal or ZIP code.
-  repeated string postal_codes = 6 [(google.api.field_behavior) = OPTIONAL];
-
-  // Country.
-  repeated string countries = 7 [(google.api.field_behavior) = OPTIONAL];
-
-  // TYPE parameter, section 5.6 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.6>.
-  repeated Type types = 8 [
-    (google.api.field_behavior) = OPTIONAL,
-    (buf.validate.field).repeated.items.enum.defined_only = true
-  ];
-
-  // PREF parameter, section 5.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-5.3>. 1 is most preferred, 100 least. Zero means
-  // unset, not most-preferred.
-  int32 pref = 9 [
-    (google.api.field_behavior) = OPTIONAL,
-    (buf.validate.field).int32 = {
-      gte: 0
-      lte: 100
-    }
-  ];
-}
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
 
 // Organization is the ORG property, RFC 6350 section 6.6.4 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.6.4>.
 //
@@ -180,4 +111,12 @@ enum Type {
 
   // Home context.
   TYPE_HOME = 2;
+
+  // Billing address, RFC 9554 section 5 <https://www.rfc-editor.org/rfc/rfc9554.html#section-5>. Defined for ADR only: an
+  // address to send invoices to.
+  TYPE_BILLING = 3;
+
+  // Delivery address, RFC 9554 section 5 <https://www.rfc-editor.org/rfc/rfc9554.html#section-5>. Defined for ADR only: an
+  // address to send packages to.
+  TYPE_DELIVERY = 4;
 }

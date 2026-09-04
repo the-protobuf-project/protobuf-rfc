@@ -1,0 +1,87 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc7953.availability.v1;
+
+import "google/api/field_behavior.proto";
+import "google/protobuf/duration.proto";
+import "protobuf/rfc7953/availability/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "AvailableProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc7953.availability.v1";
+
+// AvailablePeriod is the AVAILABLE sub-component, RFC 7953 section 3.1 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1>.
+//
+// A window of free time inside an Availability. The enclosing VAVAILABILITY
+// declares its whole range busy by default, and each of these carves out a
+// period that is not -- so an ordinary working week is one Availability with
+// one recurring AvailablePeriod, not five hundred separate ones.
+//
+// A value object, not a resource: section 3.1 defines it only as a
+// sub-component of VAVAILABILITY, and it has no identity or lifecycle apart
+// from its parent. Its own UID (`ical_uid`) is interchange identity, the same
+// distinction rule 9 draws everywhere else.
+//
+// Named AvailablePeriod rather than Available: AIP-140 <https://aip.dev/140> wants a noun, and a
+// bare adjective names no thing.
+//
+// Reference: RFC 7953 "Calendar Availability", section 3.1.
+// https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1
+message AvailablePeriod {
+  // UID, RFC 5545 section 3.8.4.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.7>. Required by RFC 7953 section 3.1 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1>.
+  //
+  // Interchange identity, not ours: it arrives inside an imported .ics and
+  // must survive a round trip unchanged.
+  string ical_uid = 1 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // DTSTART, RFC 5545 section 3.8.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.4>. When the free period begins.
+  // Required by RFC 7953 section 3.1 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1>.
+  CalendarTime start = 2 [(google.api.field_behavior) = REQUIRED];
+
+  // Exactly one end form. Section 3.1 permits DTEND or DURATION and forbids
+  // both, which is what the oneof enforces.
+  oneof end_form {
+    // DTEND, RFC 5545 section 3.8.2.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.2>. When the free period ends.
+    CalendarTime end = 3;
+
+    // DURATION, RFC 5545 section 3.8.2.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.5>. How long it lasts, measured
+    // from start.
+    google.protobuf.Duration duration = 4;
+  }
+
+  // SUMMARY, RFC 5545 section 3.8.1.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.12>, e.g. "Office hours".
+  string summary = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // DESCRIPTION, RFC 5545 section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>.
+  string description = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // LOCATION, RFC 5545 section 3.8.1.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.7>. Where the person is
+  // available, which need not be where the enclosing Availability says.
+  string location = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // RRULE, RFC 5545 section 3.8.5.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.5.3>, as an unparsed rule string.
+  //
+  // A string rather than the structured Recurrence of
+  // protobuf.rfc5545.event.v1: that message is roughly 160 lines and AIP-215
+  // forbids referencing it across packages, so modelling it here means
+  // copying it whole. Availability recurrence is in practice a weekly office
+  // -hours pattern, and no consumer has yet needed to query inside the rule.
+  // Promote it to a structured type when one does -- rule 13.
+  string recurrence_rule = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // CATEGORIES, RFC 5545 section 3.8.1.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.2>.
+  repeated string categories = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // COMMENT, RFC 5545 section 3.8.1.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.4>.
+  repeated string comments = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // Properties this schema does not model, RFC 5545 section 3.8.8.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.2>.
+  // Preserved verbatim so an imported .ics survives a round trip.
+  repeated ExtensionProperty extensions = 11 [(google.api.field_behavior) = OPTIONAL];
+}

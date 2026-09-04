@@ -12,10 +12,10 @@ import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
 
 option java_multiple_files = true;
-option java_outer_classname = "GroupProto";
+option java_outer_classname = "LdapGroupProto";
 option java_package = "io.github.theprotobufproject.protobuf.rfc4519.group.v1";
 
-// Group is the LDAP 'groupOfNames' object class, RFC 4519 section 3.5 <https://www.rfc-editor.org/rfc/rfc4519.html#section-3.5>.
+// LdapGroup is the LDAP 'groupOfNames' object class, RFC 4519 section 3.5 <https://www.rfc-editor.org/rfc/rfc4519.html#section-3.5>.
 //
 // Section 3.5 makes 'member' a mandatory multi-valued attribute of the group
 // itself. This model deliberately does not: membership is Membership, a
@@ -24,7 +24,7 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc4519.group.v1";
 // token. Externalising it is the difference between a group that records who
 // is in it and one that can answer why.
 //
-// A consequence: 'member' is mandatory in the RFC and absent here, so a Group
+// A consequence: 'member' is mandatory in the RFC and absent here, so a LdapGroup
 // with no Membership is representable in this API and is not a valid
 // groupOfNames entry.
 //
@@ -32,23 +32,23 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc4519.group.v1";
 // value that could stand in for an absent member -- inventing one (the
 // group's own DN, an owner, a sentinel) asserts a membership nothing in this
 // model states, which misleads every LDAP consumer of the export more than
-// an explicit error would. An exporter targeting LDAP MUST reject a Group
+// an explicit error would. An exporter targeting LDAP MUST reject a LdapGroup
 // with zero Memberships rather than emit an invalid or fabricated entry.
 //
 // Reference: RFC 4519 "LDAP: Schema for User Applications", section 3.5.
 // https://www.rfc-editor.org/rfc/rfc4519.html#section-3.5
-message Group {
+message LdapGroup {
   option (google.api.resource) = {
-    type: "protobufrfc.dev/Group"
-    pattern: "groups/{group}"
-    singular: "group"
-    plural: "groups"
+    type: "protobufrfc.dev/LdapGroup"
+    pattern: "ldapGroups/{ldap_group}"
+    singular: "ldapGroup"
+    plural: "ldapGroups"
   };
 
-  // Resource name, "groups/{group}".
+  // Resource name, "ldapGroups/{ldap_group}".
   string name = 1 [
     (google.api.field_behavior) = IDENTIFIER,
-    (buf.validate.field).string.pattern = "^groups/[^/]+$",
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+$",
     (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
   ];
 

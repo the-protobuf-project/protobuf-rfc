@@ -20,7 +20,7 @@ deps:
 Then `buf dep update`, and import what you need:
 
 ```proto
-import "protobuf/rfc6350/user/v1/user.proto";
+import "protobuf/rfc6350/vcard/v1/vcard.proto";
 import "protobuf/rfc5545/event/v1/event.proto";
 ```
 
@@ -75,9 +75,9 @@ cp sandbox/go/go.mod gen/go/ && (cd gen/go && go mod tidy && go build ./...)
 
 | Package | Resource | RFC |
 |---|---|---|
-| `protobuf.rfc6350.user.v1` | `User`, `Contact` | 6350 — vCard |
+| `protobuf.rfc6350.vcard.v1` | `Vcard`, `Contact` | 6350 — vCard |
 | `protobuf.rfc4519.organization.v1` | `Organization` | 4519 §3.8 |
-| `protobuf.rfc4519.group.v1` | `Group` | 4519 §3.5 |
+| `protobuf.rfc4519.group.v1` | `LdapGroup` | 4519 §3.5 |
 | `protobuf.rfc4519.membership.v1` | `Membership` | 4519 §2.17 |
 | `protobuf.rfc5545.calendar.v1` | `Calendar` | 5545 §3.4 |
 | `protobuf.rfc5545.event.v1` | `Event`, `Recurrence` | 5545 §3.6.1 |
@@ -110,8 +110,8 @@ idempotency and error codes.
 
 ## Contributing
 
-`CLAUDE.md` and `docs/conventions.md` hold the working rules — thirteen of
-them, all hard. `PLAN.md` indexes the roadmap in `plan/`.
+`CLAUDE.md`, `docs/conventions.md` and `docs/ontology.md` hold the working
+rules — fourteen of them, all hard. `PLAN.md` indexes the roadmap in `plan/`.
 
 Before opening a PR, run what CI runs:
 
@@ -123,7 +123,7 @@ buf generate                                              # Go, Java, Python
 buf generate --template buf.gen.ts.yaml --include-imports # TypeScript
 ```
 
-Plus `api-linter` and the 200-line file cap, both of which CI enforces —
+Plus `api-linter` and the 250-line file cap, both of which CI enforces —
 see `.github/workflows/ci.yml`. There are no helper scripts: the workflow is
 the single definition of every gate. No lint rule may be disabled.
 

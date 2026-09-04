@@ -31,15 +31,15 @@ option java_package = "io.github.theprotobufproject.protobuf.rfc4519.membership.
 message Membership {
   option (google.api.resource) = {
     type: "protobufrfc.dev/Membership"
-    pattern: "groups/{group}/memberships/{membership}"
+    pattern: "ldapGroups/{ldap_group}/memberships/{membership}"
     singular: "membership"
     plural: "memberships"
   };
 
-  // Resource name, "groups/{group}/memberships/{membership}".
+  // Resource name, "ldapGroups/{ldap_group}/memberships/{membership}".
   string name = 1 [
     (google.api.field_behavior) = IDENTIFIER,
-    (buf.validate.field).string.pattern = "^groups/[^/]+/memberships/[^/]+$",
+    (buf.validate.field).string.pattern = "^ldapGroups/[^/]+/memberships/[^/]+$",
     (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
   ];
 

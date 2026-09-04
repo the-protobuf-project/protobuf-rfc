@@ -3,15 +3,15 @@
 
 syntax = "proto3";
 
-package protobuf.rfc6350.user.v1;
+package protobuf.rfc6350.vcard.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
-import "protobuf/rfc6350/user/v1/types.proto";
+import "protobuf/rfc6350/vcard/v1/types.proto";
 
 option java_multiple_files = true;
 option java_outer_classname = "ContactPropertyProto";
-option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
 
 // Nickname is the NICKNAME property, RFC 6350 section 6.2.3 <https://www.rfc-editor.org/rfc/rfc6350.html#section-6.2.3>.
 //

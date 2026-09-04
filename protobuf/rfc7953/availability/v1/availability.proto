@@ -1,0 +1,150 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc7953.availability.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/duration.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc7953/availability/v1/available.proto";
+import "protobuf/rfc7953/availability/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "AvailabilityProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc7953.availability.v1";
+
+// Availability is the VAVAILABILITY component, RFC 7953 section 3.1 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1>.
+//
+// When someone is willing to be scheduled, as distinct from when they happen
+// to be free. An Event says "this time is taken"; this says "this time was
+// never on offer" -- a weekend, or the hours outside a working day.
+//
+// The polarity is inverted from everything else in the calendar, and section
+// 3.1 is explicit about it: the whole range is **busy by default**, and each
+// AvailablePeriod carves out a window that is not. `busy_type` names how the
+// uncarved remainder counts, defaulting to BUSY-UNAVAILABLE.
+//
+// A resource of its own rather than a value object on Calendar, because it
+// has identity and lifecycle: an availability pattern is created, listed,
+// amended and revoked independently of any calendar entry, which is rule 8's
+// test. It sits under a calendar, so the pattern is nested.
+//
+// Free-busy consumers: RFC 7953 section 5 <https://www.rfc-editor.org/rfc/rfc7953.html#section-5> layers these under the events,
+// so a free-busy reply computes availability first and then overlays actual
+// bookings. protobuf.rfc5545.calendar.v1's Calendars.QueryFreeBusy is where
+// that combination surfaces; it does not reference this package, per AIP-215 <https://aip.dev/215>.
+//
+// Reference: RFC 7953 "Calendar Availability", section 3.1.
+// https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1
+message Availability {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/Availability"
+    pattern: "calendars/{calendar}/availabilities/{availability}"
+    singular: "availability"
+    plural: "availabilities"
+  };
+
+  // Resource name, "calendars/{calendar}/availabilities/{availability}".
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^calendars/[^/]+/availabilities/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // UID, RFC 5545 section 3.8.4.7 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.7>. Required by RFC 7953 section 3.1 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1>.
+  // Interchange identity, distinct from uid above: it arrives inside an
+  // imported .ics and must survive a round trip.
+  string ical_uid = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // BUSYTYPE, RFC 7953 section 3.2 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.2>. How time inside this range but
+  // outside every AvailablePeriod counts. Unset means BUSY-UNAVAILABLE.
+  BusyType busy_type = 4 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).enum.defined_only = true
+  ];
+
+  // DTSTART, RFC 5545 section 3.8.2.4 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.4>. When this pattern takes
+  // effect. Optional per RFC 7953 section 3.1 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1>: absent means it has always
+  // applied.
+  CalendarTime start = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // Exactly one end form. Section 3.1 permits DTEND or DURATION and forbids
+  // both; DURATION additionally requires start to be set.
+  oneof end_form {
+    // DTEND, RFC 5545 section 3.8.2.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.2>. When the pattern stops
+    // applying. Absent means it applies indefinitely.
+    CalendarTime end = 6;
+
+    // DURATION, RFC 5545 section 3.8.2.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.2.5>, measured from start.
+    google.protobuf.Duration duration = 7;
+  }
+
+  // The free windows inside this range, RFC 7953 section 3.1 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1>. An
+  // Availability with none declares its whole range unavailable, which is a
+  // legitimate thing to say.
+  repeated AvailablePeriod available_periods = 8 [(google.api.field_behavior) = OPTIONAL];
+
+  // SUMMARY, RFC 5545 section 3.8.1.12 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.12>, e.g. "Working hours".
+  string summary = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // DESCRIPTION, RFC 5545 section 3.8.1.5 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.5>.
+  string description = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // ORGANIZER, RFC 5545 section 3.8.4.3 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.4.3>. The calendar user address
+  // whose availability this is, e.g. "mailto:jane@example.com".
+  string organizer = 11 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // PRIORITY, RFC 5545 section 3.8.1.9 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.9>. Which pattern wins where two
+  // overlap: RFC 7953 section 3.1 <https://www.rfc-editor.org/rfc/rfc7953.html#section-3.1> makes 1 the highest and 9 the lowest,
+  // with 0 meaning undefined.
+  int32 priority = 12 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).int32 = {
+      gte: 0
+      lte: 9
+    }
+  ];
+
+  // CATEGORIES, RFC 5545 section 3.8.1.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.1.2>.
+  repeated string categories = 13 [(google.api.field_behavior) = OPTIONAL];
+
+  // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. Pass it back in an
+  // update or delete to make the write conditional.
+  string etag = 14 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this availability was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp delete_time = 15 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted availability is purged for good. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp expire_time = 16 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this availability was created.
+  google.protobuf.Timestamp create_time = 17 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this availability was last modified.
+  google.protobuf.Timestamp update_time = 18 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // Properties this schema does not model, RFC 5545 section 3.8.8.2 <https://www.rfc-editor.org/rfc/rfc5545.html#section-3.8.8.2>.
+  // Preserved verbatim so an imported .ics survives a round trip.
+  repeated ExtensionProperty extensions = 19 [(google.api.field_behavior) = OPTIONAL];
+}

@@ -67,3 +67,26 @@ enum Frequency {
   // Every year.
   FREQUENCY_YEARLY = 7;
 }
+
+// RecurrenceSkip is the SKIP rule part, RFC 7529 section 4 <https://www.rfc-editor.org/rfc/rfc7529.html#section-4>.
+//
+// What to do when a recurrence lands on a date the calendar system does not
+// have -- 30 February in any year, or a leap month in a year without one.
+// Section 4 requires SKIP to be absent unless RSCALE is present, and defaults
+// it to OMIT.
+//
+// Reference: RFC 7529 "Non-Gregorian Recurrence Rules in iCalendar", section 4.
+// https://www.rfc-editor.org/rfc/rfc7529.html#section-4
+enum RecurrenceSkip {
+  // Not specified. Section 4 treats this as OMIT.
+  RECURRENCE_SKIP_UNSPECIFIED = 0;
+
+  // Drop the invalid occurrence entirely. The section 4 default.
+  RECURRENCE_SKIP_OMIT = 1;
+
+  // Move to the nearest earlier valid date.
+  RECURRENCE_SKIP_BACKWARD = 2;
+
+  // Move to the nearest later valid date.
+  RECURRENCE_SKIP_FORWARD = 3;
+}

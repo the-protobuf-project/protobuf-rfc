@@ -1,0 +1,196 @@
+// Copyright 2026 The Protobuf Project authors.
+// SPDX-License-Identifier: Apache-2.0
+
+syntax = "proto3";
+
+package protobuf.rfc7643.user.v1;
+
+import "buf/validate/validate.proto";
+import "google/api/field_behavior.proto";
+import "google/api/field_info.proto";
+import "google/api/resource.proto";
+import "google/protobuf/timestamp.proto";
+import "protobuf/rfc7643/user/v1/enterprise.proto";
+import "protobuf/rfc7643/user/v1/types.proto";
+
+option java_multiple_files = true;
+option java_outer_classname = "UserProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc7643.user.v1";
+
+// User is the SCIM User resource, RFC 7643 section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>.
+//
+// **The canonical identity model** under rule 14, holding the plain name that
+// RFC 6350's vCard gave up when it became `Vcard`. protobuf.rfc4519.group.v1
+// and its LDAP siblings remain first-class packages with their own CRUD; this
+// is what identity data is stored as.
+//
+// One caution that does not apply to the contact lineage: **there is no
+// IETF-specified SCIM-to-LDAP conversion.** RFC 9555 maps vCard to JSContact
+// element by element, so that codec follows a specification. Nothing
+// equivalent exists here, so any mapping between this and RFC 4519 is a local
+// decision and is labelled as one wherever it appears -- see rule 14 in
+// docs/ontology.md.
+//
+// SCIM's own `id` (section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>) is the service provider's identifier,
+// and this schema *is* the service provider, so it maps to `uid` rather than
+// to a second field. `external_uid` is the client's identifier, which is the
+// one that arrives from outside and must survive a round trip -- the same
+// split rule 9 draws everywhere else.
+//
+// Reference: RFC 7643 "System for Cross-domain Identity Management: Core Schema", section 4.1.
+// https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1
+message User {
+  option (google.api.resource) = {
+    type: "protobufrfc.dev/User"
+    pattern: "users/{user}"
+    singular: "user"
+    plural: "users"
+  };
+
+  // Resource name, "users/{user}". Assigned by the server.
+  string name = 1 [
+    (google.api.field_behavior) = IDENTIFIER,
+    (buf.validate.field).string.pattern = "^users/[^/]+$",
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // Server-assigned unique id, SCIM's `id`, section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>.
+  string uid = 2 [
+    (google.api.field_behavior) = OUTPUT_ONLY,
+    (google.api.field_info).format = UUID4,
+    (buf.validate.field).string.uuid = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // SCIM's `externalId`, section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>. The identifier the provisioning
+  // client uses for this user in its own system.
+  //
+  // Immutable and preserved verbatim: a provisioning client matches on it,
+  // so rewriting it would make every subsequent sync create a duplicate.
+  string external_uid = 3 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // SCIM's `userName`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>. The login identifier, unique
+  // across the provider. REQUIRED by section 4.1.
+  //
+  // Named `username` rather than `user_name`: AIP-122 <https://aip.dev/122> bans the `_name`
+  // suffix outside a three-value allowlist this is not on.
+  string username = 4 [
+    (google.api.field_behavior) = REQUIRED,
+    (buf.validate.field).string.min_len = 1
+  ];
+
+  // SCIM's `name`, section 4.1.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.1>. Renamed because the resource name
+  // owns `name`, as it does in every package here.
+  Name name_components = 5 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `displayName`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>.
+  string display_name = 6 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `nickName`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>.
+  string nickname = 7 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `profileUrl`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>. A page describing the user.
+  string profile_uri = 8 [
+    (google.api.field_behavior) = OPTIONAL,
+    (buf.validate.field).string.uri = true,
+    (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
+  ];
+
+  // SCIM's `title`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>, e.g. "Vice President".
+  string title = 9 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `userType`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>, e.g. "Employee", "Contractor".
+  // Free text: section 4.1 gives canonical values but permits others.
+  string user_type = 10 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `preferredLanguage`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>. A BCP 47 tag,
+  // RFC 5646 <https://www.rfc-editor.org/rfc/rfc5646.html>. Named per AIP-143 <https://aip.dev/143>.
+  string preferred_language_code = 11 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `locale`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>. How to format dates and numbers for
+  // this user -- distinct from `preferred_language_code`, which is what
+  // language to address them in.
+  string locale = 12 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `timezone`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>. An IANA zone name,
+  // e.g. "Europe/London".
+  string time_zone = 13 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `active`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>. Whether the account is in use.
+  //
+  // Deliberately not named `state` or `status`: AIP-216 <https://aip.dev/216> reserves both for a
+  // server-owned lifecycle, and this is administrative intent rather than
+  // lifecycle. It is also distinct from `delete_time` below -- a deactivated
+  // user still exists, which is the whole point of the attribute.
+  bool active = 14 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `password`, section 4.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1>.
+  //
+  // INPUT_ONLY: section 7.5 requires a service provider never to return it,
+  // and the field behaviour says so in the schema rather than leaving it to
+  // an implementer to remember.
+  string password = 15 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = INPUT_ONLY
+  ];
+
+  // SCIM's `emails`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>.
+  repeated Attribute emails = 16 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `phoneNumbers`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>.
+  repeated Attribute phone_numbers = 17 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `ims`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>. Instant messaging addresses.
+  repeated Attribute instant_messages = 18 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `photos`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>.
+  repeated Attribute photos = 19 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `addresses`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>.
+  repeated Address addresses = 20 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `groups`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>. The groups this user belongs to.
+  //
+  // OUTPUT_ONLY: section 4.1.2 makes it read-only and says membership is
+  // changed through the Group resource, not here. That is the same one-way
+  // edge protobuf.rfc4519.membership.v1 already models for LDAP.
+  repeated Attribute groups = 21 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // SCIM's `entitlements`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>. Things the user is
+  // entitled to that are not group memberships.
+  repeated Attribute entitlements = 22 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `roles`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>.
+  repeated Attribute roles = 23 [(google.api.field_behavior) = OPTIONAL];
+
+  // SCIM's `x509Certificates`, section 4.1.2 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.1.2>. DER-encoded
+  // certificates, base64 in the JSON form.
+  repeated Attribute x509_certificates = 24 [(google.api.field_behavior) = OPTIONAL];
+
+  // The Enterprise User extension, section 4.3 <https://www.rfc-editor.org/rfc/rfc7643.html#section-4.3>.
+  //
+  // A field rather than a separate resource: section 4.3 defines it as a
+  // schema extension of User, sharing its identity and lifecycle, which is
+  // rule 8's test for a value object.
+  EnterpriseUser enterprise = 25 [(google.api.field_behavior) = OPTIONAL];
+
+  // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. This is SCIM's
+  // `meta.version`, section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>.
+  string etag = 26 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this user was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp delete_time = 27 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When a soft-deleted user is purged for good. AIP-164 <https://aip.dev/164>.
+  google.protobuf.Timestamp expire_time = 28 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this user was created. SCIM's `meta.created`, section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>.
+  google.protobuf.Timestamp create_time = 29 [(google.api.field_behavior) = OUTPUT_ONLY];
+
+  // When this user was last modified. SCIM's `meta.lastModified`,
+  // section 3.1 <https://www.rfc-editor.org/rfc/rfc7643.html#section-3.1>.
+  google.protobuf.Timestamp update_time = 30 [(google.api.field_behavior) = OUTPUT_ONLY];
+}

@@ -3,39 +3,44 @@
 
 syntax = "proto3";
 
-package protobuf.rfc6350.user.v1;
+package protobuf.rfc6350.vcard.v1;
 
 import "buf/validate/validate.proto";
 import "google/api/field_behavior.proto";
 import "google/api/field_info.proto";
 import "google/api/resource.proto";
 import "google/protobuf/timestamp.proto";
-import "protobuf/rfc6350/user/v1/contact.proto";
+import "protobuf/rfc6350/vcard/v1/contact.proto";
 
 option java_multiple_files = true;
-option java_outer_classname = "UserProto";
-option java_package = "io.github.theprotobufproject.protobuf.rfc6350.user.v1";
+option java_outer_classname = "VcardProto";
+option java_package = "io.github.theprotobufproject.protobuf.rfc6350.vcard.v1";
 
-// User is an addressable person.
+// Vcard is an addressable person, as RFC 6350 describes one.
 //
 // Identity is ours, the property vocabulary is RFC 6350's. This is the shape
 // to copy for Event, Todo and the rest: a thin resource shell over an
 // RFC-shaped value object.
 //
+// Named for the format rather than for what it holds, per rule 14: RFC 6350
+// is the legacy layer of the contact lineage, and the canonical `User` of
+// RFC 7643 takes the plain name. A vCard is what this is, so `VcardUser`
+// would only repeat itself.
+//
 // Reference: RFC 6350 "vCard Format Specification".
 // https://www.rfc-editor.org/rfc/rfc6350.html
-message User {
+message Vcard {
   option (google.api.resource) = {
-    type: "protobufrfc.dev/User"
-    pattern: "users/{user}"
-    singular: "user"
-    plural: "users"
+    type: "protobufrfc.dev/Vcard"
+    pattern: "vcards/{vcard}"
+    singular: "vcard"
+    plural: "vcards"
   };
 
-  // Resource name, "users/{user}". Assigned by the server.
+  // Resource name, "vcards/{vcard}". Assigned by the server.
   string name = 1 [
     (google.api.field_behavior) = IDENTIFIER,
-    (buf.validate.field).string.pattern = "^users/[^/]+$",
+    (buf.validate.field).string.pattern = "^vcards/[^/]+$",
     (buf.validate.field).ignore = IGNORE_IF_ZERO_VALUE
   ];
 
@@ -58,13 +63,27 @@ message User {
     (google.api.field_behavior) = IMMUTABLE
   ];
 
-  // The vCard property set for this user.
+  // CREATED, RFC 9554 section 3.1 <https://www.rfc-editor.org/rfc/rfc9554.html#section-3.1>. When the originating system created
+  // the vCard, distinct from create_time below, which is when this server
+  // first stored it. The same split as uid and vcard_uid, for the same
+  // reason: an imported vCard must keep the timestamp it arrived with or a
+  // re-export rewrites history.
+  //
+  // Here rather than on Contact because it is provenance about the document,
+  // not one of the properties describing the person -- the same placement
+  // UID gets.
+  google.protobuf.Timestamp vcard_create_time = 10 [
+    (google.api.field_behavior) = OPTIONAL,
+    (google.api.field_behavior) = IMMUTABLE
+  ];
+
+  // The vCard property set this resource carries.
   Contact contact = 3 [(google.api.field_behavior) = REQUIRED];
 
-  // When the user was created.
+  // When this vCard was created.
   google.protobuf.Timestamp create_time = 4 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // When the user was last modified.
+  // When this vCard was last modified.
   google.protobuf.Timestamp update_time = 5 [(google.api.field_behavior) = OUTPUT_ONLY];
 
   // Weak validator for optimistic concurrency, AIP-154 <https://aip.dev/154>. Pass it back in an
@@ -72,9 +91,9 @@ message User {
   // since it was read, the request fails instead of overwriting.
   string etag = 7 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // When the user was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
+  // When this vCard was soft-deleted, unset while it is live. AIP-164 <https://aip.dev/164>.
   google.protobuf.Timestamp delete_time = 8 [(google.api.field_behavior) = OUTPUT_ONLY];
 
-  // When a soft-deleted user is purged for good. AIP-164 <https://aip.dev/164>.
+  // When a soft-deleted vCard is purged for good. AIP-164 <https://aip.dev/164>.
   google.protobuf.Timestamp expire_time = 9 [(google.api.field_behavior) = OUTPUT_ONLY];
 }

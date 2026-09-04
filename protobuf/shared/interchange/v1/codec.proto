@@ -15,7 +15,7 @@ option java_package = "io.github.theprotobufproject.protobuf.shared.interchange.
 // A registered codec: one (resource_type, media_type) pair Interchange can
 // move.
 message Codec {
-  // Resource type the codec handles, e.g. "protobufrfc.dev/User".
+  // Resource type the codec handles, e.g. "protobufrfc.dev/Vcard".
   string resource_type = 1;
 
   // RFC 6838 media type it reads or writes, e.g. "text/vcard".
@@ -48,7 +48,7 @@ message ListCodecsRequest {
 
   // Filter expression, AIP-160. Narrowing to one resource type goes here
   // rather than in a field of its own -- AIP-132 permits no custom fields on
-  // a List request, and `resource_type = "protobufrfc.dev/User"` says the
+  // a List request, and `resource_type = "protobufrfc.dev/Vcard"` says the
   // same thing through the standard channel.
   string filter = 3 [(google.api.field_behavior) = OPTIONAL];
 }
