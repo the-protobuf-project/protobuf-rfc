@@ -66,6 +66,26 @@ service Events {
     option (google.api.method_signature) = "parent";
   }
 
+  // Retrieves several events by name in one call.
+  //
+  //   GET /v1/{parent=calendars/*}/events:batchGet
+  //
+  // CALDAV:calendar-multiget, RFC 4791 section 7.9 <https://www.rfc-editor.org/rfc/rfc4791.html#section-7.9>: a client that has
+  // synchronised a collection holds hrefs and wants the bodies, which is one
+  // round trip here instead of one GET per event.
+  //
+  // Safe and idempotent. Events come back in the order requested, per
+  // AIP-231 <https://aip.dev/231>. All-or-nothing: an unreadable or missing name fails the whole
+  // call rather than returning a short list, so a caller never has to work out
+  // which name a gap belonged to.
+  //
+  //   NOT_FOUND          any requested event does not exist
+  //   INVALID_ARGUMENT   a name is malformed, sits under a different parent, or the list is empty or over 1000
+  //   PERMISSION_DENIED  caller may not read any one of them
+  rpc BatchGetEvents(BatchGetEventsRequest) returns (BatchGetEventsResponse) {
+    option (google.api.http) = {get: "/v1/{parent=calendars/*}/events:batchGet"};
+  }
+
   // Creates a event.
   //
   //   POST /v1/{parent=calendars/*}/events

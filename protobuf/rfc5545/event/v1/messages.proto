@@ -26,6 +26,45 @@ message GetEventRequest {
   ];
 }
 
+// Request message for Events.BatchGetEvents, AIP-231 <https://aip.dev/231>.
+//
+// CALDAV:calendar-multiget, RFC 4791 section 7.9 <https://www.rfc-editor.org/rfc/rfc4791.html#section-7.9>. A CalDAV client that has
+// synchronised a collection holds a list of hrefs and needs their bodies; the
+// REPORT fetches them in one round trip rather than one GET each. Deferred
+// until a consumer needed the saving, which is rule 13, and one now does.
+message BatchGetEventsRequest {
+  // Calendar the events belong to, "calendars/{calendar}". Every name in
+  // `names` must sit under it -- section 7.9 scopes the report to the
+  // collection it is addressed to.
+  string parent = 1 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).child_type = "protobufrfc.dev/Event",
+    (buf.validate.field).string.pattern = "^calendars/[^/]+$"
+  ];
+
+  // Names of the events to retrieve, each
+  // "calendars/{calendar}/events/{event}". Capped at 1000, matching the page
+  // ceiling on ListEvents.
+  repeated string names = 2 [
+    (google.api.field_behavior) = REQUIRED,
+    (google.api.resource_reference).type = "protobufrfc.dev/Event",
+    (buf.validate.field).repeated = {
+      min_items: 1
+      max_items: 1000
+      items: {
+        string: {pattern: "^calendars/[^/]+/events/[^/]+$"}
+      }
+    }
+  ];
+}
+
+// Response message for Events.BatchGetEvents, AIP-231 <https://aip.dev/231>.
+message BatchGetEventsResponse {
+  // The events, in the order their names were requested. AIP-231 <https://aip.dev/231> requires
+  // the ordering so a caller can zip the two lists without matching on name.
+  repeated Event events = 1;
+}
+
 // Request message for Events.ListEvents, AIP-132 <https://aip.dev/132>.
 //
 // Returns stored events, one per recurrence rule -- listing does not expand
