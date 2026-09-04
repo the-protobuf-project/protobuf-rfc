@@ -18,6 +18,25 @@ older one is the secondary run, and it is not going away.
 | Calendar | [RFC 8984](https://www.rfc-editor.org/rfc/rfc8984.html) JSCalendar | [RFC 5545](https://www.rfc-editor.org/rfc/rfc5545.html) iCalendar | draft only | **deferred** |
 | Scheduling | none published | [RFC 5546](https://www.rfc-editor.org/rfc/rfc5546.html) iTIP | — | legacy only |
 
+```mermaid
+flowchart TD
+    L(["a lineage: a modern model<br/>and the format it grew from"]) --> Q1{"is the modern one<br/>a published RFC?"}
+    Q1 -- no --> DEF["**defer the whole lineage**<br/>build neither twice<br/><br/>calendar sits here"]
+    Q1 -- yes --> Q2{"is a successor already<br/>obsoleting it?"}
+    Q2 -- yes --> DEF
+    Q2 -- no --> BUILD["**build it canonical**<br/>legacy keeps full CRUD"]
+    BUILD --> Q3{"does an RFC specify<br/>the conversion?"}
+    Q3 -- yes --> FOLLOW["follow it element by element<br/><br/>contact: RFC 9555"]
+    Q3 -- no --> OWN["mapping is ours —<br/>every message must say so<br/><br/>identity: SCIM ↔ LDAP"]
+
+    classDef stop fill:#9a6700,stroke:#9a6700,color:#fff
+    classDef go fill:#1a7f37,stroke:#1a7f37,color:#fff
+    classDef warn fill:#8250df,stroke:#8250df,color:#fff
+    class DEF stop
+    class FOLLOW go
+    class OWN warn
+```
+
 ### "Published" is literal
 
 A draft is not an RFC, however imminent. JSCalendar 2.0 obsoletes RFC 8984
@@ -82,15 +101,39 @@ without being renamed itself.
 
 ### The pipeline is directional at rest
 
-```
-   front (either)                        back (canonical)
-   ─────────────────                     ────────────────
-   vCard / jCard / xCard  ──decode──▶    JSContact
-   iCalendar / jCal       ──decode──▶    JSCalendar   (when published)
-   LDIF                   ──decode──▶    SCIM
+```mermaid
+flowchart LR
+    subgraph front["front — either may arrive, either may be served"]
+        VC["vCard · xCard · jCard"]
+        IC["iCalendar · jCal"]
+        LD["LDIF"]
+    end
 
-                          ◀──encode───   served back in either
+    subgraph back["back — what is stored"]
+        JSC["JSContact<br/>RFC 9553 + 9982"]
+        JSCAL["JSCalendar<br/>RFC 8984 — deferred"]
+        SCIM["SCIM<br/>RFC 7643"]
+    end
+
+    VC -- "decode · RFC 9555" --> JSC
+    JSC -. "encode" .-> VC
+    IC -- "decode · draft only" --> JSCAL
+    JSCAL -. "encode" .-> IC
+    LD -- "decode · no spec" --> SCIM
+    SCIM -. "encode" .-> LD
+
+    classDef built fill:#1a7f37,stroke:#1a7f37,color:#fff
+    classDef pending fill:#9a6700,stroke:#9a6700,color:#fff
+    classDef invented fill:#8250df,stroke:#8250df,color:#fff
+    class JSC built
+    class JSCAL pending
+    class SCIM invented
 ```
+
+Solid arrows are decode, dotted are encode. The colours are the three states
+rule 14 distinguishes: green where an RFC specifies the conversion and it is
+built, amber where the lineage is deferred because the specification is a
+draft, purple where the mapping is ours to invent because no RFC defines one.
 
 Either representation may arrive, and either may be served. What is **stored**
 is always the newest. Saving a vCard therefore reads back as JSContact, and

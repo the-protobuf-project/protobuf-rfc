@@ -90,6 +90,30 @@ marked DONE, which is the convention those files themselves set.
 
 ## The AIP-215 duplication tax
 
+```mermaid
+flowchart TB
+    CT["CalendarTime<br/><i>one definition, five copies</i>"]
+
+    subgraph copies["each package defines its own"]
+        E["rfc5545/event"]
+        TD["rfc5545/todo"]
+        J["rfc5545/journal"]
+        S["rfc5546/scheduling"]
+        A["rfc7953/availability"]
+    end
+
+    CT -.-> E & TD & J & S & A
+    E x-. "AIP-215 forbids<br/>importing it" .-x TD
+
+    classDef ghost fill:none,stroke:#8250df,stroke-dasharray:4,color:#8250df
+    class CT ghost
+```
+
+The dashed box is not a package — it is the type that *would* exist if one
+were allowed. What exists is five identical definitions, and the crossed edge
+is the import that would remove them.
+
+
 `CalendarTime` is defined identically four times (`rfc5545/event`, `todo`,
 `journal`, `rfc5546/scheduling`); `Classification` and `Participation` are
 each duplicated too. One package per resource plus AIP-215's cross-package

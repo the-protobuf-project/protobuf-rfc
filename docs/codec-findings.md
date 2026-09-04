@@ -24,9 +24,37 @@ two values, so the quotes are transport, not content.
 The important part is *why the round-trip test passed anyway*. Decoding
 dropped TYPE and encoding therefore never emitted it, so decode -> encode ->
 decode was equal while the data was gone. **Round-trip equality proves
-stability, not correctness.** `decode_test.go` now asserts specific decoded
-values, which is what actually catches symmetric loss. Any future codec needs
-both kinds of test.
+stability, not correctness.**
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant D as document
+    participant M1 as model
+    participant D2 as re-encoded
+    participant M2 as model again
+
+    Note over D: TEL#59;TYPE="work,voice"
+    D->>M1: decode
+    Note over M1: types: [] ← dropped
+    M1->>D2: encode
+    Note over D2: TEL: — never emitted
+    D2->>M2: decode
+    Note over M2: types: []
+
+    rect rgb(26, 127, 55)
+        Note over M1,M2: round trip: M1 == M2 ✓ PASSES
+    end
+    rect rgb(207, 34, 46)
+        Note over D,M1: value assertion: types == ["work","voice"] ✗ FAILS
+    end
+```
+
+The loss is **symmetric**: the same blind spot on both sides, so the two ends
+agree and the comparison is satisfied. Only step 2 is wrong, and only a test
+that names the expected value can see it. `decode_test.go` now asserts
+specific decoded values, which is what actually catches this. Any future codec
+needs both kinds of test.
 
 ## 2.7 What the cross-format test caught
 

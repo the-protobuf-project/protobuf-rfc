@@ -4,6 +4,31 @@ How anything new enters the schema. Read this before proposing a field.
 
 ## The three routes
 
+```mermaid
+flowchart TD
+    START(["a property the schema<br/>does not model yet"]) --> IDENT{"is it addressed,<br/>listed and deleted<br/>independently?"}
+    IDENT -- yes --> PKG["**3. a new package**<br/>full CRUD, own directory<br/><br/>Membership passed this"]
+    IDENT -- no --> QUERY{"filtered or sorted on?<br/>structure worth enforcing?<br/>a constraint that catches errors?<br/>part of an identity rule?"}
+    QUERY -- "any one, yes" --> TYPED["**2. a typed field**<br/>on the resource"]
+    QUERY -- "none" --> EXT["**1. ExtensionProperty**<br/>the default, and free"]
+
+    EXT -. "later, when one<br/>becomes true" .-> TYPED
+
+    classDef def fill:#0969da,stroke:#0969da,color:#fff
+    classDef cost fill:#9a6700,stroke:#9a6700,color:#fff
+    class EXT def
+    class PKG cost
+```
+
+Start at the bottom, not the top. `ExtensionProperty` costs nothing and loses
+nothing, a typed field costs a schema change, and a package is a permanent
+CRUD commitment — so the question is never "does this deserve a field" but
+"has this earned its way out of extensions". The dotted arrow is the only
+cheap move: promotion is additive, demotion breaks consumers.
+
+Note what is absent from the decision: whether the RFC lists the property.
+That is not a route to anything.
+
 **1. `ExtensionProperty` — the default, and free.**
 
 Every property-bearing resource carries `repeated ExtensionProperty

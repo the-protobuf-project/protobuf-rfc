@@ -100,9 +100,32 @@ choice; no server-side code here enforces anything.
 
 ## Services
 
-Six resource services with the AIP-131..135 standard methods plus AIP-164
-undelete, and `Interchange`, which exports and imports any resource type in
-its native format through long-running operations.
+Every resource gets the AIP-131..135 standard methods plus AIP-164 undelete,
+so each one shares the same lifecycle:
+
+```mermaid
+stateDiagram-v2
+    direction LR
+    [*] --> Live: Create
+    Live --> Live: Update
+    Live --> Deleted: Delete
+    Deleted --> Live: Undelete
+    Deleted --> [*]: expire_time reached
+
+    note right of Deleted
+        still addressable by Get
+        hidden from List unless show_deleted
+    end note
+```
+
+A delete is soft: the resource keeps its name and its data, gains a
+`delete_time`, and is purged only at `expire_time`. That window is what makes
+`Undelete` possible, and it is why a deleted resource still answers `Get`.
+
+Three generic services sit alongside, keyed on resource type rather than
+belonging to any one: `Interchange` moves resources in their native formats,
+`Sync` reports what changed since a caller last asked, and `Search` finds
+across types.
 
 There is no server here. The `google.api.http` annotations describe the REST
 mapping a host should implement; each RPC's comment documents its verb, path,
